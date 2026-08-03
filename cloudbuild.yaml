@@ -1,0 +1,25 @@
+# Google Cloud Build Pipeline - Diurno Fullstack App
+steps:
+  # 1. Build da imagem Docker usando o Dockerfile na raiz
+  - name: 'gcr.io/cloud-builders/docker'
+    args: [ 'build', '-t', 'gcr.io/$PROJECT_ID/diurno-app:$COMMIT_SHA', '.' ]
+
+  # 2. Push da imagem para o Google Container Registry (GCR)
+  - name: 'gcr.io/cloud-builders/docker'
+    args: [ 'push', 'gcr.io/$PROJECT_ID/diurno-app:$COMMIT_SHA' ]
+
+  # 3. Deploy contínuo no Google Cloud Run
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: gcloud
+    args:
+      - 'run'
+      - 'deploy'
+      - 'diurno-app'
+      - '--image=gcr.io/$PROJECT_ID/diurno-app:$COMMIT_SHA'
+      - '--region=us-central1'
+      - '--platform=managed'
+      - '--allow-unauthenticated'
+      - '--port=8080'
+
+images:
+  - 'gcr.io/$PROJECT_ID/diurno-app:$COMMIT_SHA'

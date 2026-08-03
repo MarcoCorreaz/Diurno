@@ -1,0 +1,32 @@
+server:
+  port: ${PORT:8080}
+
+spring:
+  application:
+    name: diurno-backend
+  main:
+    banner-mode: off
+
+# Endpoints do Spring Boot Actuator (importante para health checks do Cloud Run)
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "health,info"
+  endpoint:
+    health:
+      show-details: always
+
+# Configurações do Google Gemini AI
+gemini:
+  api-key: ${GEMINI_API_KEY:}
+
+# Configurações do Firebase Admin SDK
+firebase:
+  project-id: ${FIREBASE_PROJECT_ID:}
+  credentials-file: ${GOOGLE_APPLICATION_CREDENTIALS:}
+
+# Configurações customizadas do Diurno
+app:
+  cors:
+    allowed-origins: ${ALLOWED_ORIGINS:http://localhost:5173,http://localhost:3000}
