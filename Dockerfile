@@ -34,7 +34,7 @@ ENV PORT=8080
 
 # Copia package.json para instalar apenas dependências de produção necessárias
 COPY package*.json ./
-RUN npm ci --only=production && npm cache clean --force
+RUN npm ci --omit=dev && npm cache clean --force
 
 # Copia os artefatos compilados da etapa de build
 COPY --from=build /app/dist ./dist

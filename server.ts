@@ -21,8 +21,8 @@ async function startServer() {
       }
 
       const apiKey = process.env.GEMINI_API_KEY;
-      if (!apiKey) {
-        return res.status(500).json({ error: "GEMINI_API_KEY is not configured" });
+      if (!apiKey || apiKey.trim() === "") {
+        return res.status(500).json({ error: "GEMINI_API_KEY não está configurada no ambiente." });
       }
 
       const ai = new GoogleGenAI({ apiKey });
@@ -32,7 +32,7 @@ async function startServer() {
       });
 
       res.json({ text: response.text });
-    } catch (error) {
+    } catch (error: any) {
       console.error("Gemini API Error:", error);
       res.status(502).json({ error: "Erro ao se comunicar com a IA. Tente novamente." });
     }
@@ -48,6 +48,13 @@ async function startServer() {
   } else {
     // Production: serve static files and SPA fallback
     const distPath = path.join(process.cwd(), 'dist');
+    // Security: impedir que arquivos de backend e mapas de código do servidor sejam expostos como arquivos estáticos
+    app.use((req, res, next) => {
+      if (req.path.endsWith('.cjs') || req.path.endsWith('.map') || req.path.includes('.env')) {
+        return res.status(404).send('Not found');
+      }
+      next();
+    });
     app.use(express.static(distPath));
     app.get('*', (req, res) => {
       res.sendFile(path.join(distPath, 'index.html'));

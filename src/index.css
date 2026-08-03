@@ -99,4 +99,47 @@
   animation: border-beam calc(var(--duration)*1s) infinite linear;
 }
 
+/* ==========================================================================
+   Diurno Design System — Craft · Memory · Consistency Utilitários
+   ========================================================================== */
+
+/* 1. Scrollbar customizado escuro para evitar scrollbar branco no Windows */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #0A0A0A;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #262626;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #3F3F46;
+}
+
+/* 2. Utilitários de Superfície e Profundidade (Elevation Hierarchy) */
+@layer utilities {
+  .surface-0 {
+    @apply bg-[#0A0A0A];
+  }
+  .surface-1 {
+    @apply bg-[#101010] border border-white/10;
+  }
+  .surface-2 {
+    @apply bg-white/[0.04] border border-white/10;
+  }
+  .surface-hover {
+    @apply transition-all duration-200 hover:border-white/20 hover:bg-white/[0.03];
+  }
+  .focus-ring {
+    @apply focus:outline-none focus-visible:ring-2 focus-visible:ring-white/20 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0A0A0A];
+  }
+}
+
+
 
