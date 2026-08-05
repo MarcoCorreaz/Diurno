@@ -8,6 +8,7 @@ import { useNavigate } from "react-router-dom";
 import Sidebar from "@/components/layout/Sidebar";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { StripeCheckoutModal } from "@/components/modals/StripeCheckoutModal";
 
 export const PLANS = [
   {
@@ -70,6 +71,7 @@ export default function Subscription() {
   useLenis();
   const navigate = useNavigate();
   const [billingCycle, setBillingCycle] = useState<"monthly" | "yearly">("yearly");
+  const [selectedPlan, setSelectedPlan] = useState<{name: string; description: string; price: string; cycle: string} | null>(null);
 
   return (
     <div className="flex flex-col md:flex-row h-[100dvh] w-full bg-background text-foreground font-sans overflow-hidden selection:bg-foreground selection:text-background">
@@ -188,8 +190,11 @@ export default function Subscription() {
                   <Button
                     onClick={() => {
                       if (plan.name === "Básico") return;
-                      toast("Pagamento em breve", {
-                        description: `O processamento de pagamentos ainda não está disponível. O plano ${plan.name} será liberado em uma atualização futura.`
+                      setSelectedPlan({
+                        name: plan.name,
+                        description: plan.description,
+                        price: price,
+                        cycle: billingCycle,
                       });
                     }}
                     variant={isPro ? "default" : "outline"}
@@ -198,7 +203,7 @@ export default function Subscription() {
                     className="w-full h-auto py-3.5 px-4 mb-8 relative overflow-hidden group shadow-sm"
                   >
                     <span className="relative z-10">
-                      {plan.name === "Básico" ? "Plano Atual" : `${plan.buttonText} (em breve)`}
+                      {plan.name === "Básico" ? "Plano Atual" : plan.buttonText}
                     </span>
                     {isPro && (
                       <div className="absolute inset-0 -translate-x-full group-hover:animate-[shimmer_1.5s_infinite] bg-gradient-to-r from-transparent via-background/20 to-transparent z-0" />
@@ -230,6 +235,12 @@ export default function Subscription() {
           </div>
         </div>
       </main>
+
+      <StripeCheckoutModal
+        isOpen={!!selectedPlan}
+        onClose={() => setSelectedPlan(null)}
+        plan={selectedPlan}
+      />
     </div>
   );
 }

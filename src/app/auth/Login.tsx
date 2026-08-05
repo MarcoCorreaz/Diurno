@@ -6,8 +6,7 @@ import { Logo } from "@/components/composed/Logo";
 import { AuthLayout } from "@/components/layout/AuthLayout";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { auth } from "@/lib/firebase";
-import { GoogleAuthProvider, signInWithPopup, signInWithEmailAndPassword } from "firebase/auth";
+import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 
 export default function Login() {
@@ -26,21 +25,25 @@ export default function Login() {
 
     if (Object.keys(errors).length > 0) {
       setErrorFields(errors);
-       
       return;
     }
 
     try {
-      await signInWithEmailAndPassword(auth, email, password);
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) throw error;
+
       navigate("/dashboard");
     } catch (error: any) {
       setErrorFields({ email: true, password: true });
       
-      
       let message = "E-mail ou senha inválidos.";
-      if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
+      if (error?.message?.includes("Invalid login credentials")) {
         message = "E-mail ou senha inválidos.";
-      } else if (error.code === 'auth/too-many-requests') {
+      } else if (error?.status === 429) {
         message = "Muitas tentativas. Tente novamente mais tarde.";
       }
       
@@ -52,9 +55,14 @@ export default function Login() {
 
   const handleGoogleLogin = async () => {
     try {
-      const provider = new GoogleAuthProvider();
-      await signInWithPopup(auth, provider);
-      navigate("/dashboard");
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/dashboard`,
+        },
+      });
+
+      if (error) throw error;
     } catch (error: any) {
       toast.error("Erro ao entrar com Google", {
         description: error.message,

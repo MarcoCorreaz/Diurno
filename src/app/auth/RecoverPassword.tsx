@@ -1,6 +1,5 @@
 import React, { useState } from "react";
-import { auth } from "@/lib/firebase";
-import { sendPasswordResetEmail } from "firebase/auth";
+import { supabase } from "@/lib/supabase";
 import { Link, useNavigate } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 import { AuthLayout } from "@/components/layout/AuthLayout";
@@ -22,7 +21,12 @@ export default function RecoverPassword() {
     }
     
     try {
-      await sendPasswordResetEmail(auth, email);
+      const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/login`,
+      });
+
+      if (resetError) throw resetError;
+
       toast.success("E-mail de recuperação enviado!", {
         description: "Se o e-mail existir, você receberá um link na sua caixa de entrada."
       });
@@ -30,9 +34,7 @@ export default function RecoverPassword() {
         navigate("/login");
       }, 2000);
     } catch (err: any) {
-      // Por segurança, mostrar sucesso mesmo se não existir.
-      // Se for um erro real do firebase como rede ou formato inválido:
-      if (err.code === 'auth/invalid-email') {
+      if (err.message?.includes('invalid')) {
          setError("E-mail com formato inválido.");
       } else {
          toast.success("E-mail de recuperação enviado!", {

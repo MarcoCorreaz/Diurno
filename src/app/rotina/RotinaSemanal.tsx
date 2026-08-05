@@ -1,10 +1,8 @@
 // FIX: Semanas fora da atual (weekOffset !== 0) mostram estado vazio em vez de repetir os dados.
 import React, { useState, useEffect } from "react";
 import { Task, toTask } from "@/lib/types";
-import { auth, db } from "@/lib/firebase";
-import { onAuthStateChanged } from "firebase/auth";
-import { collection, onSnapshot, query, where, setDoc, doc, serverTimestamp } from "firebase/firestore";
-import { handleFirestoreError, OperationType } from "@/lib/firebase-errors";
+import { supabase } from "@/lib/supabase";
+import { useAuth } from "@/contexts/AuthContext";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Plus, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -17,14 +15,17 @@ import Sidebar from "@/components/layout/Sidebar";
 import { useNotifications } from "@/hooks/use-notifications";
 import { Confetti } from "@/components/effects/Confetti";
 
-const WEEK_DAYS = [
-  { id: "seg", label: "SEG", date: "24", full: "Segunda-feira", color: "from-morning/10" },
-  { id: "ter", label: "TER", date: "25", full: "Terça-feira", color: "from-afternoon/10" },
-  { id: "qua", label: "QUA", date: "26", full: "Quarta-feira", color: "from-morning/10" },
-  { id: "qui", label: "QUI", date: "27", full: "Quinta-feira", color: "from-afternoon/10" },
-  { id: "sex", label: "SEX", date: "28", full: "Sexta-feira", color: "from-morning/10" },
-  { id: "sab", label: "SAB", date: "29", full: "Sábado", color: "from-afternoon/10" },
-  { id: "dom", label: "DOM", date: "30", full: "Domingo", color: "from-morning/10" },
+import { startOfWeek, addDays, addWeeks, format } from "date-fns";
+import { ptBR } from "date-fns/locale";
+
+const DAY_CONFIG = [
+  { id: "seg", label: "SEG", full: "Segunda-feira", color: "from-morning/10" },
+  { id: "ter", label: "TER", full: "Terça-feira", color: "from-afternoon/10" },
+  { id: "qua", label: "QUA", full: "Quarta-feira", color: "from-morning/10" },
+  { id: "qui", label: "QUI", full: "Quinta-feira", color: "from-afternoon/10" },
+  { id: "sex", label: "SEX", full: "Sexta-feira", color: "from-morning/10" },
+  { id: "sab", label: "SAB", full: "Sábado", color: "from-afternoon/10" },
+  { id: "dom", label: "DOM", full: "Domingo", color: "from-morning/10" },
 ];
 
 
@@ -38,62 +39,105 @@ export default function RotinaSemanal() {
   const [localRoutine, setLocalRoutine] = useState<Record<string, Task[]>>({});
   const [loading, setLoading] = useState(true);
 
+  const { currentUser } = useAuth();
+
   useEffect(() => {
-    const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
-      if (!user) {
-        navigate("/login");
-        return;
-      }
-      const q = query(
-        collection(db, "tasks"),
-        where("userId", "==", user.uid)
-      );
-      const unsubscribeTasks = onSnapshot(q, (snapshot) => {
+    if (!currentUser) {
+      navigate("/login");
+      return;
+    }
+
+    const fetchTasks = async () => {
+      const { data, error } = await supabase
+        .from("tasks")
+        .select("*")
+        .eq("user_id", currentUser.id);
+
+      if (!error && data) {
         const newRoutine: Record<string, Task[]> = { seg: [], ter: [], qua: [], qui: [], sex: [], sab: [], dom: [] };
-        snapshot.forEach((d) => {
-          const task = toTask(d.id, d.data());
+        data.forEach((d: any) => {
+          const task = toTask(d.id, d);
           if (task.dayOfWeek && newRoutine[task.dayOfWeek]) {
             newRoutine[task.dayOfWeek].push(task);
           }
         });
         setLocalRoutine(newRoutine);
-        setLoading(false);
-      }, (error) => {
-        handleFirestoreError(error, OperationType.LIST, "tasks");
-        setLoading(false);
-      });
-      return () => unsubscribeTasks();
-    });
-    return () => unsubscribeAuth();
-  }, [navigate]);
+      }
+      setLoading(false);
+    };
+
+    fetchTasks();
+
+    const channel = supabase
+      .channel("rotina_tasks_channel")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "tasks",
+          filter: `user_id=eq.${currentUser.id}`,
+        },
+        () => {
+          fetchTasks();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [currentUser, navigate]);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [taskToEdit, setTaskToEdit] = useState<Task | null>(null);
   const [showConfetti, setShowConfetti] = useState(false);
   const { scheduleTaskReminder } = useNotifications();
 
   const handleSaveTask = async (newTask: Partial<Task> & { id: string }) => {
+    if (!currentUser) return;
     try {
-      const user = auth.currentUser;
-      if (!user) return;
-      const taskRef = doc(db, "tasks", newTask.id);
-      await setDoc(taskRef, {
-        ...newTask,
-        userId: user.uid,
-        dayOfWeek: activeDay,
-        updatedAt: serverTimestamp(),
-        createdAt: newTask.createdAt || serverTimestamp()
-      }, { merge: true });
+      const taskData = {
+        id: newTask.id,
+        title: newTask.title || "",
+        time: newTask.time || "",
+        category: newTask.category,
+        day_of_week: activeDay,
+        completed: newTask.completed ?? false,
+        user_id: currentUser.id,
+        current_streak: newTask.currentStreak || 0,
+        max_streak: newTask.maxStreak || 0,
+        total_completions: newTask.totalCompletions || 0,
+        created_at: newTask.createdAt || new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+
+      const { error } = await supabase.from("tasks").upsert(taskData);
+      if (error) throw error;
 
       if (newTask.time) {
-        scheduleTaskReminder(newTask.title, newTask.time, newTask.id);
+        scheduleTaskReminder(newTask.title || "", newTask.time, newTask.id);
       }
     } catch (error) {
-      handleFirestoreError(error, OperationType.UPDATE, `tasks/${newTask.id}`);
+      console.error("Erro ao salvar hábito na rotina:", error);
+      toast.error("Erro ao salvar hábito na rotina.");
     }
   };
 
-  const activeDayData = WEEK_DAYS.find(d => d.id === activeDay) || WEEK_DAYS[0];
-  const tasks = weekOffset === 0 ? (localRoutine[activeDay] || []) : [];
+  const weekDays = React.useMemo(() => {
+    const now = new Date();
+    const start = addWeeks(startOfWeek(now, { weekStartsOn: 1 }), weekOffset);
+    return DAY_CONFIG.map((config, index) => {
+      const dayDate = addDays(start, index);
+      return {
+        ...config,
+        date: format(dayDate, "dd"),
+        full: `${config.full} (${format(dayDate, "dd 'de' MMMM", { locale: ptBR })})`,
+      };
+    });
+  }, [weekOffset]);
+
+  const activeDayData = weekDays.find(d => d.id === activeDay) || weekDays[0];
+  const tasks = localRoutine[activeDay] || [];
 
   const changeWeek = (newDirection: number) => {
     setDirection(newDirection);
@@ -116,12 +160,13 @@ export default function RotinaSemanal() {
     }
     
     try {
-      await setDoc(doc(db, "tasks", taskId), {
+      const { error } = await supabase.from("tasks").update({
         completed: isCompleted,
-        updatedAt: serverTimestamp(),
-      }, { merge: true });
+        updated_at: new Date().toISOString(),
+      }).eq("id", taskId);
+      if (error) throw error;
     } catch (error) {
-      handleFirestoreError(error, OperationType.UPDATE, `tasks/${taskId}`);
+      console.error("Erro ao atualizar hábito:", error);
     }
   };
 
@@ -193,7 +238,7 @@ export default function RotinaSemanal() {
 
           {/* Week Days Tabs */}
           <div className="flex items-center gap-1 md:gap-2 p-1 bg-secondary/30 backdrop-blur-sm border border-border rounded-2xl relative overflow-x-auto no-scrollbar shadow-sm">
-            {WEEK_DAYS.map((day) => {
+            {weekDays.map((day) => {
               const isActive = activeDay === day.id;
               return (
                 <button

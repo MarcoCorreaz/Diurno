@@ -1,10 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Task, toTask } from "@/lib/types";
-import { auth, db } from "@/lib/firebase";
-import { onAuthStateChanged } from "firebase/auth";
-import { collection, onSnapshot, query, where, setDoc, doc, serverTimestamp } from "firebase/firestore";
-import { handleFirestoreError, OperationType } from "@/lib/firebase-errors";
+import { supabase } from "@/lib/supabase";
 import { motion } from "framer-motion";
 import { Check, Clock, Lightbulb, Sparkles, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -27,30 +24,45 @@ export default function Dashboard() {
   const [loadingTasks, setLoadingTasks] = useState(true);
   
   useEffect(() => {
-    const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
-      if (!user) {
-        navigate("/login");
-        return;
+    if (!currentUser) {
+      navigate("/login");
+      return;
+    }
+
+    const fetchTasks = async () => {
+      const { data, error } = await supabase
+        .from("tasks")
+        .select("*")
+        .eq("user_id", currentUser.id);
+
+      if (!error && data) {
+        setTasks(data.map((d: any) => toTask(d.id, d)));
       }
-      const q = query(
-        collection(db, "tasks"), 
-        where("userId", "==", user.uid),
-      );
-      const unsubscribeTasks = onSnapshot(q, (snapshot) => {
-        const newTasks: Task[] = [];
-        snapshot.forEach((d) => {
-          newTasks.push(toTask(d.id, d.data()));
-        });
-        setTasks(newTasks);
-        setLoadingTasks(false);
-      }, (error) => {
-        handleFirestoreError(error, OperationType.LIST, "tasks");
-        setLoadingTasks(false);
-      });
-      return () => unsubscribeTasks();
-    });
-    return () => unsubscribeAuth();
-  }, [navigate]);
+      setLoadingTasks(false);
+    };
+
+    fetchTasks();
+
+    const channel = supabase
+      .channel("tasks_channel")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "tasks",
+          filter: `user_id=eq.${currentUser.id}`,
+        },
+        () => {
+          fetchTasks();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [currentUser, navigate]);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [taskToEdit, setTaskToEdit] = useState<Task | null>(null);
   const [showConfetti, setShowConfetti] = useState(false);
@@ -132,10 +144,18 @@ export default function Dashboard() {
       const tasksToCreate = smartTasks.length >= 3 ? smartTasks : defaultTasks;
 
       for (const t of tasksToCreate) {
-        await setDoc(doc(db, "tasks", t.id), {
-          ...t,
-          createdAt: serverTimestamp(),
-          updatedAt: serverTimestamp(),
+        await supabase.from("tasks").upsert({
+          id: t.id,
+          title: t.title,
+          time: t.time,
+          category: t.category,
+          completed: t.completed,
+          user_id: currentUser.id,
+          current_streak: 0,
+          max_streak: 0,
+          total_completions: 0,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
         });
         if (t.time) {
           scheduleTaskReminder(t.title, t.time, t.id);
@@ -147,7 +167,8 @@ export default function Dashboard() {
         description: "3 hábitos estratégicos de Manhã, Tarde e Noite foram criados para o seu dia.",
       });
     } catch (error) {
-      handleFirestoreError(error, OperationType.CREATE, "tasks");
+      console.error("Erro ao gerar rotina IA:", error);
+      toast.error("Erro ao gerar rotina IA.");
     } finally {
       setGeneratingRoutine(false);
     }
@@ -178,29 +199,38 @@ export default function Dashboard() {
     return { summaryText: summary, tipText: tip };
   }, [tasks]);
 
+  const greeting = useMemo(() => {
+    const hour = new Date().getHours();
+    if (hour >= 5 && hour < 12) return "Bom dia";
+    if (hour >= 12 && hour < 18) return "Boa tarde";
+    return "Boa noite";
+  }, []);
+
   const handleSaveTask = async (newTask: Task) => {
+    if (!currentUser) return;
     try {
-      const user = auth.currentUser;
-      if (!user) return;
-      if (taskToEdit) {
-        await setDoc(doc(db, "tasks", newTask.id), {
-          ...newTask,
-          userId: user.uid,
-          updatedAt: serverTimestamp(),
-        }, { merge: true });
-      } else {
-        await setDoc(doc(db, "tasks", newTask.id), {
-          ...newTask,
-          userId: user.uid,
-          createdAt: serverTimestamp(),
-          updatedAt: serverTimestamp(),
-        });
-      }
+      const taskData = {
+        id: newTask.id,
+        title: newTask.title,
+        time: newTask.time,
+        category: newTask.category,
+        day_of_week: newTask.dayOfWeek,
+        completed: newTask.completed,
+        user_id: currentUser.id,
+        current_streak: newTask.currentStreak || 0,
+        max_streak: newTask.maxStreak || 0,
+        total_completions: newTask.totalCompletions || 0,
+        created_at: newTask.createdAt || new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
+      const { error } = await supabase.from("tasks").upsert(taskData);
+      if (error) throw error;
       if (newTask.time) {
         scheduleTaskReminder(newTask.title, newTask.time, newTask.id);
       }
     } catch (error) {
-      handleFirestoreError(error, taskToEdit ? OperationType.UPDATE : OperationType.CREATE, "tasks");
+      console.error("Erro ao salvar hábito:", error);
+      toast.error("Erro ao salvar hábito.");
     }
   };
 
@@ -219,12 +249,13 @@ export default function Dashboard() {
     }
 
     try {
-      await setDoc(doc(db, "tasks", id), {
+      const { error } = await supabase.from("tasks").update({
         completed: isCompleted,
-        updatedAt: serverTimestamp(),
-      }, { merge: true });
+        updated_at: new Date().toISOString(),
+      }).eq("id", id);
+      if (error) throw error;
     } catch (error) {
-      handleFirestoreError(error, OperationType.UPDATE, `tasks/${id}`);
+      console.error("Erro ao atualizar hábito:", error);
     }
   };
 
@@ -251,7 +282,7 @@ export default function Dashboard() {
           <div>
             <p className="text-muted-foreground text-xs md:text-sm uppercase tracking-[0.2em] mb-2 font-medium">Hoje</p>
             <h1 className="font-sans text-3xl md:text-5xl font-semibold tracking-tight text-foreground">
-              Bom dia{currentUser?.displayName ? `, ${currentUser.displayName}` : "."}
+              {greeting}{currentUser?.displayName ? `, ${currentUser.displayName}` : "."}
             </h1>
           </div>
           <SummaryWidget tasks={tasks} />

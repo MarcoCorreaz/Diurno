@@ -1,9 +1,7 @@
 // FIX: Lendo o parâmetro da URL (useParams), usando mock dinâmico e tratando estado "não encontrado".
 import React, { useState, useEffect } from "react";
 import { Task, toTask } from "@/lib/types";
-import { auth, db } from "@/lib/firebase";
-import { doc, getDoc, onSnapshot, updateDoc, serverTimestamp } from "firebase/firestore";
-import { handleFirestoreError, OperationType } from "@/lib/firebase-errors";
+import { supabase } from "@/lib/supabase";
 import { motion, AnimatePresence } from "framer-motion";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft, Flame, TrendingUp, Calendar, Trophy, Target, History, Clock } from "lucide-react";
@@ -15,6 +13,7 @@ import { toast } from "sonner";
 import { PomodoroTimer } from "@/components/PomodoroTimer";
 import { subDays, format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import Sidebar from "@/components/layout/Sidebar";
 
 
 
@@ -61,19 +60,43 @@ export default function HabitoDetalhe() {
 
   useEffect(() => {
     if (!id) return;
-    const docRef = doc(db, "tasks", id);
-    const unsubscribe = onSnapshot(docRef, (docSnap) => {
-      if (docSnap.exists()) {
-        setHabitData(toTask(docSnap.id, docSnap.data()));
+
+    const fetchHabit = async () => {
+      const { data, error } = await supabase
+        .from("tasks")
+        .select("*")
+        .eq("id", id)
+        .single();
+
+      if (!error && data) {
+        setHabitData(toTask(data.id, data));
       } else {
         setHabitData(null);
       }
       setLoading(false);
-    }, (error) => {
-      handleFirestoreError(error, OperationType.GET, `tasks/${id}`);
-      setLoading(false);
-    });
-    return () => unsubscribe();
+    };
+
+    fetchHabit();
+
+    const channel = supabase
+      .channel(`habit_detail_${id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "tasks",
+          filter: `id=eq.${id}`,
+        },
+        () => {
+          fetchHabit();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [id]);
 
   const handleMarkAsDone = async () => {
@@ -82,18 +105,20 @@ export default function HabitoDetalhe() {
       const newStreak = (habitData.currentStreak || 0) + 1;
       const newTotal = (habitData.totalCompletions || 0) + 1;
       const newMax = Math.max(habitData.maxStreak || 0, newStreak);
-      await updateDoc(doc(db, "tasks", id), {
+      const { error } = await supabase.from("tasks").update({
         completed: true,
-        currentStreak: newStreak,
-        totalCompletions: newTotal,
-        maxStreak: newMax,
-        updatedAt: serverTimestamp()
-      });
+        current_streak: newStreak,
+        total_completions: newTotal,
+        max_streak: newMax,
+        updated_at: new Date().toISOString()
+      }).eq("id", id);
+      if (error) throw error;
       toast.success("Hábito marcado como feito!", {
         description: "Streak mantido. Ótimo trabalho!",
       });
     } catch (error) {
-      handleFirestoreError(error, OperationType.UPDATE, `tasks/${id}`);
+      console.error("Erro ao marcar hábito como feito:", error);
+      toast.error("Erro ao atualizar hábito.");
     }
   };
 
@@ -113,7 +138,8 @@ export default function HabitoDetalhe() {
   }
 
   return (
-    <div className="flex h-[100dvh] w-full bg-background text-foreground font-sans overflow-hidden relative selection:bg-foreground selection:text-background">
+    <div className="flex flex-col md:flex-row h-[100dvh] w-full bg-background text-foreground font-sans overflow-hidden relative selection:bg-foreground selection:text-background">
+      <Sidebar />
       <main className="flex-1 p-6 md:p-10 flex flex-col overflow-y-auto relative z-10 max-w-5xl mx-auto w-full pb-24 md:pb-10">
         {/* Header */}
         <header className="mb-8 md:mb-12 flex flex-col md:flex-row md:items-center justify-between gap-6">

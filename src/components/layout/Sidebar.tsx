@@ -37,7 +37,7 @@ export default function Sidebar() {
           )}
         >
           <Calendar className="w-6 h-6 md:w-5 md:h-5 shrink-0" />
-          <span className="hidden md:block">Diurno</span>
+          <span className="hidden md:block">Semana</span>
         </Link>
         <Link 
           to="/planos" 
@@ -48,6 +48,15 @@ export default function Sidebar() {
         >
           <CreditCard className="w-6 h-6 md:w-5 md:h-5 shrink-0" />
           <span className="hidden md:block">Planos</span>
+        </Link>
+        <Link 
+          to="/settings" 
+          className={cn(
+            "p-2 rounded-lg cursor-pointer transition-all flex items-center md:hidden",
+            path === "/settings" ? "text-foreground bg-secondary font-medium" : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
+          )}
+        >
+          <Settings className="w-6 h-6 shrink-0" />
         </Link>
       </div>
       

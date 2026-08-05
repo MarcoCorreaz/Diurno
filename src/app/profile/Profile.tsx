@@ -1,8 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Task } from "@/lib/types";
-import { auth, db } from "@/lib/firebase";
-import { signOut } from "firebase/auth";
-import { doc, getDoc, collection, query, where, getDocs } from "firebase/firestore";
+import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import Sidebar from "@/components/layout/Sidebar";
@@ -33,21 +31,25 @@ export default function Profile() {
 
   useEffect(() => {
     if (currentUser) {
-      // Formata a data de criação
       let memberSinceStr = "Recente";
-      if (currentUser.metadata.creationTime) {
-        const d = new Date(currentUser.metadata.creationTime);
+      if (currentUser.raw?.created_at) {
+        const d = new Date(currentUser.raw.created_at);
         memberSinceStr = d.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
       }
 
-      getDoc(doc(db, "users", currentUser.uid)).then(snap => {
-        if (snap.exists()) {
-          const data = snap.data();
+      const fetchProfile = async () => {
+        const { data } = await supabase
+          .from("profiles")
+          .select("*")
+          .eq("id", currentUser.id)
+          .single();
+
+        if (data) {
           setUserProfile(prev => ({
-            ...prev, 
-            name: data.name || prev.name, 
+            ...prev,
+            name: data.name || prev.name,
             email: data.email || prev.email,
-            plan: data.plan || "Free", // Firebase field
+            plan: data.plan || "Free",
             memberSince: memberSinceStr
           }));
         } else {
@@ -57,19 +59,24 @@ export default function Profile() {
             memberSince: memberSinceStr
           }));
         }
-      });
+      };
+      fetchProfile();
 
       // Busca as tasks para somar os stats
       const fetchStats = async () => {
-        const q = query(collection(db, "tasks"), where("userId", "==", currentUser.uid));
-        const snap = await getDocs(q);
+        const { data } = await supabase
+          .from("tasks")
+          .select("current_streak, total_completions")
+          .eq("user_id", currentUser.id);
+
         let totalStreak = 0;
         let totalComps = 0;
-        snap.forEach(doc => {
-          const t = doc.data();
-          totalStreak += (t.currentStreak || 0);
-          totalComps += (t.totalCompletions || 0);
-        });
+        if (data) {
+          data.forEach((t: any) => {
+            totalStreak += (t.current_streak || 0);
+            totalComps += (t.total_completions || 0);
+          });
+        }
         setStatsData({ streak: totalStreak, completions: totalComps });
       };
       fetchStats();
@@ -89,7 +96,7 @@ export default function Profile() {
   };
 
   const handleLogout = async () => {
-    await signOut(auth);
+    await supabase.auth.signOut();
     toast("Sessão encerrada");
     navigate("/login");
   };
@@ -116,21 +123,21 @@ export default function Profile() {
         </header>
 
         <div className="max-w-3xl mx-auto w-full flex flex-col gap-8">
-          
+
           {/* Avatar and Basic Info */}
           <section className="bg-card border border-border rounded-3xl p-6 md:p-8 flex flex-col md:flex-row items-center md:items-start gap-6 shadow-sm relative overflow-hidden">
-             {/* Decorative Background for Pro */}
-             {userProfile.plan === "Pro" && (
-                <div className="absolute top-0 right-0 p-8 opacity-5 pointer-events-none -translate-y-8 translate-x-8">
-                    <Crown className="w-48 h-48 text-foreground" />
-                </div>
-             )}
-            
+            {/* Decorative Background for Pro */}
+            {userProfile.plan === "Pro" && (
+              <div className="absolute top-0 right-0 p-8 opacity-5 pointer-events-none -translate-y-8 translate-x-8">
+                <Crown className="w-48 h-48 text-foreground" />
+              </div>
+            )}
+
             <div className="relative group shrink-0">
               <div className="w-24 h-24 md:w-32 md:h-32 rounded-full border border-border overflow-hidden bg-secondary">
                 <img src={userProfile.avatar} alt={userProfile.name} className="w-full h-full object-cover" />
               </div>
-              <button 
+              <button
                 onClick={handleAvatarChange}
                 className="absolute bottom-0 right-0 w-8 h-8 md:w-10 md:h-10 bg-background border border-border rounded-full flex items-center justify-center shadow-sm text-foreground hover:bg-secondary transition-colors"
                 aria-label="Alterar foto de perfil"
@@ -138,13 +145,13 @@ export default function Profile() {
                 <Camera className="w-4 h-4" />
               </button>
             </div>
-            
+
             <div className="flex-1 text-center md:text-left flex flex-col items-center md:items-start justify-center pt-2">
               <div className="flex items-center gap-3 mb-1">
                 <h2 className="font-sans text-2xl font-semibold tracking-tight text-foreground">{userProfile.name}</h2>
                 {userProfile.plan === "Pro" && (
                   <span className="bg-foreground text-background text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full shadow-sm flex items-center gap-1">
-                     <Crown className="w-3 h-3" /> Pro
+                    <Crown className="w-3 h-3" /> Pro
                   </span>
                 )}
               </div>
@@ -157,13 +164,13 @@ export default function Profile() {
           <section className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             {stats.map((stat, i) => (
               <div key={i} className="bg-card border border-border rounded-3xl p-5 shadow-sm flex items-center gap-4">
-                 <div className="w-12 h-12 rounded-full bg-secondary border border-border flex items-center justify-center shrink-0 shadow-sm">
-                    <stat.icon className={cn("w-6 h-6", stat.color)} />
-                 </div>
-                 <div>
-                    <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1 font-medium">{stat.label}</p>
-                    <p className="font-mono text-xl font-semibold text-foreground">{stat.value}</p>
-                 </div>
+                <div className="w-12 h-12 rounded-full bg-secondary border border-border flex items-center justify-center shrink-0 shadow-sm">
+                  <stat.icon className={cn("w-6 h-6", stat.color)} />
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1 font-medium">{stat.label}</p>
+                  <p className="font-mono text-xl font-semibold text-foreground">{stat.value}</p>
+                </div>
               </div>
             ))}
           </section>
@@ -190,8 +197,8 @@ export default function Profile() {
                   </defs>
                   <XAxis dataKey="day" stroke="#71717A" fontSize={12} tickLine={false} axisLine={false} />
                   <YAxis stroke="#71717A" fontSize={12} tickLine={false} axisLine={false} domain={[0, 100]} />
-                  <Tooltip 
-                    contentStyle={{ backgroundColor: "#1C1C1A", borderColor: "#27272A", borderRadius: "12px", color: "#F9F9F6" }} 
+                  <Tooltip
+                    contentStyle={{ backgroundColor: "#1C1C1A", borderColor: "#27272A", borderRadius: "12px", color: "#F9F9F6" }}
                     labelStyle={{ color: "#A1A1AA" }}
                     formatter={(value) => [`${value}%`, "Conclusão"]}
                   />
@@ -214,10 +221,10 @@ export default function Profile() {
                 </div>
               </div>
               <div className="flex items-center gap-3">
-                 <span className="text-sm font-medium text-foreground">{userProfile.plan}</span>
-                 <div className="w-8 h-8 rounded-full border border-border flex items-center justify-center text-muted-foreground bg-background shadow-sm">
-                   &rarr;
-                 </div>
+                <span className="text-sm font-medium text-foreground">{userProfile.plan}</span>
+                <div className="w-8 h-8 rounded-full border border-border flex items-center justify-center text-muted-foreground bg-background shadow-sm">
+                  &rarr;
+                </div>
               </div>
             </Link>
 

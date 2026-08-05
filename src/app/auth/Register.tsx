@@ -7,10 +7,7 @@ import { AuthLayout } from "@/components/layout/AuthLayout";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { auth, db } from "@/lib/firebase";
-import { GoogleAuthProvider, signInWithPopup, createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
-import { doc, setDoc, serverTimestamp } from "firebase/firestore";
-import { handleFirestoreError, OperationType } from "@/lib/firebase-errors";
+import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 
 export default function Register() {
@@ -23,19 +20,24 @@ export default function Register() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [errorFields, setErrorFields] = useState<{name?: boolean; email?: boolean; password?: boolean; confirmPassword?: boolean; mismatch?: boolean; weak?: boolean}>({});
 
-  const saveUserToFirestore = async (user: any) => {
+  const saveUserToSupabase = async (user: any) => {
     try {
-      await setDoc(doc(db, "users", user.uid), {
-        name: user.displayName || name,
+      const { error } = await supabase.from("profiles").upsert({
+        id: user.id,
+        name: user.user_metadata?.full_name || user.user_metadata?.displayName || name,
         email: user.email || email,
         goal: location.state?.goal || "",
         energy: location.state?.energy || "",
-        routineDetails: location.state?.routineDetails || "",
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
+        routine_details: location.state?.routineDetails || "",
+        plan: "free",
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
       });
-    } catch (dbError) {
-      handleFirestoreError(dbError, OperationType.CREATE, `users/${user.uid}`);
+      if (error) {
+        console.error("Erro ao salvar perfil no Supabase:", error);
+      }
+    } catch (err) {
+      console.error(err);
     }
   };
 
@@ -61,26 +63,33 @@ export default function Register() {
 
     if (Object.keys(errors).length > 0) {
       setErrorFields(errors);
-       
       return;
     }
 
     try {
-      const result = await createUserWithEmailAndPassword(auth, email, password);
-      const user = result.user;
-      await updateProfile(user, { displayName: name });
-      
-      await saveUserToFirestore(user);
-      
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            full_name: name,
+            displayName: name,
+          },
+        },
+      });
+
+      if (error) throw error;
+      if (data.user) {
+        await saveUserToSupabase(data.user);
+      }
+
       navigate("/dashboard");
     } catch (error: any) {
       let message = error.message;
-      if (error.code === 'auth/email-already-in-use') {
+      if (error.message?.includes("User already registered")) {
         message = 'Este e-mail já está em uso.';
-      } else if (error.code === 'auth/weak-password') {
+      } else if (error.message?.includes("Password should be at least")) {
         message = 'A senha é muito fraca.';
-      } else if (error.code === 'auth/invalid-email') {
-        message = 'E-mail inválido.';
       }
 
       toast.error("Erro ao criar conta", {
@@ -91,11 +100,13 @@ export default function Register() {
 
   const handleGoogleRegister = async () => {
     try {
-      const provider = new GoogleAuthProvider();
-      const result = await signInWithPopup(auth, provider);
-      
-      await saveUserToFirestore(result.user);
-      navigate("/dashboard");
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/dashboard`,
+        },
+      });
+      if (error) throw error;
     } catch (error: any) {
       toast.error("Erro ao criar conta com Google", {
         description: error.message,
@@ -112,7 +123,7 @@ export default function Register() {
         
         <div className="text-center mb-8">
           <h1 className="text-3xl font-sans font-semibold tracking-tight text-foreground mb-2">Crie sua conta</h1>
-          <p className="text-muted-foreground text-sm">O primeiro passo para dominar o seu tempo.</p>
+          <p className="text-muted-foreground text-sm">Comece a transformar sua rotina hoje mesmo.</p>
         </div>
 
         <form 
@@ -120,12 +131,12 @@ export default function Register() {
           className="w-full bg-card border border-border p-8 rounded-3xl flex flex-col gap-5 shadow-sm"
         >
           <div className="flex flex-col gap-2">
-            <label className="text-sm font-medium text-foreground">Nome</label>
+            <label className="text-sm font-medium text-foreground">Nome completo</label>
             <Input 
               type="text" 
               value={name}
               onChange={(e) => { setName(e.target.value); setErrorFields(prev => ({...prev, name: false})); }}
-              placeholder="Lucas"
+              placeholder="Lucas Silva"
               error={errorFields.name}
             />
           </div>
@@ -146,46 +157,38 @@ export default function Register() {
             <Input 
               type="password" 
               value={password}
-              onChange={(e) => { setPassword(e.target.value); setErrorFields(prev => ({...prev, password: false})); }}
-              placeholder="••••••••"
+              onChange={(e) => { setPassword(e.target.value); setErrorFields(prev => ({...prev, password: false, weak: false, mismatch: false})); }}
+              placeholder="Mínimo 8 caracteres"
               error={errorFields.password}
             />
-            <div className="flex items-center gap-2 mt-1">
-              <div className="flex-1 h-1.5 bg-secondary rounded-full overflow-hidden">
-                <div className={cn(
-                  "h-full transition-all duration-300",
-                  passwordStrength === 0 ? "w-0" : 
-                  passwordStrength < 4 ? "w-1/3 bg-red-500" :
-                  passwordStrength < 8 ? "w-2/3 bg-yellow-500" :
-                  "w-full bg-green-500"
-                )} />
+            {password.length > 0 && (
+              <div className="flex items-center gap-1.5 mt-1">
+                <div className={cn("h-1 flex-1 rounded-full", passwordStrength < 8 ? "bg-red-500/50" : "bg-emerald-500")}></div>
+                <div className={cn("h-1 flex-1 rounded-full", passwordStrength >= 10 ? "bg-emerald-500" : "bg-border")}></div>
+                <div className={cn("h-1 flex-1 rounded-full", passwordStrength >= 12 ? "bg-emerald-500" : "bg-border")}></div>
               </div>
-              <span className="text-[10px] font-medium text-muted-foreground min-w-16 text-right">
-                {passwordStrength >= 8 ? 'Forte' : passwordStrength >= 4 ? 'Média' : 'Fraca'}
-              </span>
-            </div>
-            <p className={cn("text-[10px] flex items-center gap-1", passwordStrength >= 8 ? "text-green-500" : "text-muted-foreground")}>
-              <Check className="w-3 h-3" /> Mínimo de 8 caracteres
-            </p>
+            )}
+            {errorFields.weak && (
+              <span className="text-xs text-red-500 font-medium">A senha deve ter pelo menos 8 caracteres.</span>
+            )}
           </div>
-          
+
           <div className="flex flex-col gap-2">
-            <label className="text-sm font-medium text-foreground">Confirmar Senha</label>
+            <label className="text-sm font-medium text-foreground">Confirmar senha</label>
             <Input 
               type="password" 
               value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              placeholder="••••••••"
+              onChange={(e) => { setConfirmPassword(e.target.value); setErrorFields(prev => ({...prev, confirmPassword: false, mismatch: false})); }}
+              placeholder="Repita sua senha"
               error={errorFields.confirmPassword}
             />
+            {errorFields.mismatch && (
+              <span className="text-xs text-red-500 font-medium">As senhas não coincidem.</span>
+            )}
           </div>
 
-          {(errorFields.name || errorFields.email || errorFields.password || errorFields.confirmPassword) && (
-            <p className="text-xs text-red-500 font-medium text-center">
-              {errorFields.mismatch ? "As senhas não coincidem." : 
-               errorFields.weak ? "A senha precisa ter no mínimo 8 caracteres." :
-               "Preencha todos os campos para continuar."}
-            </p>
+          {(errorFields.name || errorFields.email || errorFields.password || errorFields.confirmPassword) && !errorFields.weak && !errorFields.mismatch && (
+            <p className="text-xs text-red-500 font-medium text-center">Preencha todos os campos obrigatórios.</p>
           )}
 
           <Button type="submit" size="xl" shape="pill" className="mt-2 w-full group relative overflow-hidden">
@@ -205,12 +208,12 @@ export default function Register() {
               <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
               <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
             </svg>
-            Criar com Google
+            Cadastrar com Google
           </Button>
         </form>
 
         <p className="mt-8 text-sm text-muted-foreground">
-          Já tem uma conta? <Link to="/login" className="text-foreground font-medium hover:underline transition-all">Faça login</Link>
+          Já tem uma conta? <Link to="/login" className="text-foreground font-medium hover:underline transition-all">Entrar</Link>
         </p>
       </div>
     </AuthLayout>

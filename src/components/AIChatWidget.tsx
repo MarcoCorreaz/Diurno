@@ -66,7 +66,7 @@ export function AIChatWidget() {
       const errorMsg: Message = {
         id: (Date.now() + 1).toString(),
         sender: "ai",
-        text: "Dica Diurno IA: Para otimizar seu ritmo diário, separe atividades de foco analítico pela manhã, execução principal à tarde e desconexão à noite. Você também pode usar o botão 'Gerar Rotina com IA' no painel para criar hábitos automaticamente no seu Firestore!",
+        text: "Dica Diurno IA: Para otimizar seu ritmo diário, separe atividades de foco analítico pela manhã, execução principal à tarde e desconexão à noite. Você também pode usar o botão 'Gerar Rotina com IA' no painel para criar hábitos automaticamente no seu Supabase!",
       };
       setMessages(prev => [...prev, errorMsg]);
     } finally {
