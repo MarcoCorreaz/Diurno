@@ -10,7 +10,7 @@ import { NumberTicker } from "@/components/engagement/NumberTicker";
 import { useLenis } from "@/hooks/use-lenis";
 import { AreaChart, Area, ResponsiveContainer, Tooltip, XAxis } from "recharts";
 import { toast } from "sonner";
-import { PomodoroTimer } from "@/components/PomodoroTimer";
+import { PomodoroTimer } from "@/components/features/PomodoroTimer";
 import { subDays, format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import Sidebar from "@/components/layout/Sidebar";

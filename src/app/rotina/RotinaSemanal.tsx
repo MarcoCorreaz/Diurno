@@ -9,7 +9,7 @@ import { cn } from "@/lib/utils";
 import { useLenis } from "@/hooks/use-lenis";
 import { useLocation, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { TaskSheet } from "@/components/TaskSheet";
+import { TaskSheet } from "@/components/features/TaskSheet";
 import { getCategoryColor } from "@/lib/categories";
 import Sidebar from "@/components/layout/Sidebar";
 import { useNotifications } from "@/hooks/use-notifications";

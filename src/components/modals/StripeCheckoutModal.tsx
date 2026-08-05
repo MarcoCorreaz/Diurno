@@ -108,7 +108,7 @@ export function StripeCheckoutModal({
           exit={{ opacity: 0, scale: 0.95, y: 10 }}
           className="relative w-full max-w-md overflow-hidden rounded-3xl bg-card border border-border shadow-2xl z-10"
         >
-          <Confetti active={showConfetti} />
+          <Confetti isActive={showConfetti} onComplete={() => setShowConfetti(false)} />
 
           {/* Cabeçalho Stripe */}
           <div className="bg-secondary/60 border-b border-border p-6 flex items-center justify-between">

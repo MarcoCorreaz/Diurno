@@ -9,12 +9,12 @@ import { Button } from "@/components/ui/button";
 import { useLenis } from "@/hooks/use-lenis";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { TaskSheet } from "@/components/TaskSheet";
-import { AIChatWidget } from "@/components/AIChatWidget";
+import { TaskSheet } from "@/components/features/TaskSheet";
+import { AIChatWidget } from "@/components/features/AIChatWidget";
 import Sidebar from "@/components/layout/Sidebar";
 import { useNotifications } from "@/hooks/use-notifications";
 import { Confetti } from "@/components/effects/Confetti";
-import { SummaryWidget } from "@/components/SummaryWidget";
+import { SummaryWidget } from "@/components/features/SummaryWidget";
 
 
 export default function Dashboard() {
