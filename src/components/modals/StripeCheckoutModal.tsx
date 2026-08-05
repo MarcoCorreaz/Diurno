@@ -29,10 +29,6 @@ export function StripeCheckoutModal({
   const { currentUser } = useAuth();
   const [loading, setLoading] = useState(false);
   const [showConfetti, setShowConfetti] = useState(false);
-  const [cardNumber, setCardNumber] = useState("4242 •••• •••• 4242");
-  const [expiry, setExpiry] = useState("12/28");
-  const [cvc, setCvc] = useState("123");
-  const [nameOnCard, setNameOnCard] = useState(currentUser?.displayName || "Lucas Silva");
 
   if (!isOpen || !plan) return null;
 
@@ -67,10 +63,11 @@ export function StripeCheckoutModal({
       await new Promise((resolve) => setTimeout(resolve, 1500));
 
       if (currentUser) {
+        const normalizedPlan = plan.name === "Vitalício" ? "lifetime" : plan.name.toLowerCase();
         await supabase
           .from("profiles")
           .update({
-            plan: plan.name,
+            plan: normalizedPlan,
             updated_at: new Date().toISOString(),
           })
           .eq("id", currentUser.id);
@@ -120,7 +117,7 @@ export function StripeCheckoutModal({
                 S
               </div>
               <div>
-                <h3 className="font-sans font-semibold text-foreground text-base">Semana Checkout</h3>
+                <h3 className="font-sans font-semibold text-foreground text-base">Diurno Checkout</h3>
                 <p className="text-xs text-muted-foreground flex items-center gap-1">
                   <Lock className="w-3 h-3" /> Powered by Stripe
                 </p>
@@ -155,75 +152,15 @@ export function StripeCheckoutModal({
               </div>
             </div>
 
-            {/* Simulação de Cartão Stripe Elements */}
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <label className="text-xs font-semibold uppercase tracking-wider text-foreground">
-                  Cartão de Crédito
-                </label>
-                <span className="text-xs text-muted-foreground flex items-center gap-1">
-                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" /> Criptografado SSL
-                </span>
+            {/* Aviso de redirecionamento para o Stripe Seguro */}
+            <div className="bg-secondary/30 rounded-xl p-4 border border-border flex flex-col items-center justify-center text-center gap-3">
+              <ShieldCheck className="w-8 h-8 text-emerald-500" />
+              <div>
+                <p className="text-sm text-foreground font-medium">Pagamento Seguro com Stripe</p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Você será redirecionado para a página de checkout criptografada do Stripe para finalizar a assinatura.
+                </p>
               </div>
-
-              <div className="space-y-3">
-                <div className="relative">
-                  <CreditCard className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                  <Input
-                    type="text"
-                    value={cardNumber}
-                    onChange={(e) => setCardNumber(e.target.value)}
-                    placeholder="0000 0000 0000 0000"
-                    className="pl-10 font-mono text-sm"
-                    required
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="text-xs text-muted-foreground mb-1 block">Validade</label>
-                    <Input
-                      type="text"
-                      value={expiry}
-                      onChange={(e) => setExpiry(e.target.value)}
-                      placeholder="MM/AA"
-                      className="font-mono text-sm text-center"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label className="text-xs text-muted-foreground mb-1 block">CVC / CVV</label>
-                    <Input
-                      type="text"
-                      value={cvc}
-                      onChange={(e) => setCvc(e.target.value)}
-                      placeholder="123"
-                      className="font-mono text-sm text-center"
-                      required
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="text-xs text-muted-foreground mb-1 block">Nome no Cartão</label>
-                  <Input
-                    type="text"
-                    value={nameOnCard}
-                    onChange={(e) => setNameOnCard(e.target.value)}
-                    placeholder="LUCAS SILVA"
-                    className="text-sm uppercase"
-                    required
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Nota SaaS Test Mode */}
-            <div className="bg-secondary/30 rounded-xl p-3 border border-border flex items-start gap-2.5">
-              <AlertCircle className="w-4 h-4 text-muted-foreground shrink-0 mt-0.5" />
-              <p className="text-xs text-muted-foreground">
-                <strong>Modo Sandbox Stripe:</strong> Sua chave API do Stripe será utilizada em produção na Vercel. Aqui você pode testar a assinatura e ver o upgrade em tempo real.
-              </p>
             </div>
 
             {/* Botão Confirmar */}
@@ -235,7 +172,7 @@ export function StripeCheckoutModal({
               className="w-full relative overflow-hidden group shadow-md"
             >
               <span className="relative z-10 flex items-center justify-center gap-2">
-                {loading ? "Processando assinatura..." : `Assinar por R$ ${plan.price}`}
+                {loading ? "Redirecionando..." : `Ir para Pagamento`}
               </span>
             </Button>
           </form>

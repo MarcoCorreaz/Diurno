@@ -10,7 +10,8 @@
     "preview": "vite preview",
     "lint": "tsc --noEmit",
     "qa": "npm run lint && npm run build",
-    "check": "npm run qa"
+    "check": "npm run qa",
+    "audit:motion": "npx motionscore http://localhost:5173"
   },
   "dependencies": {
     "@base-ui/react": "^1.6.0",
@@ -26,6 +27,7 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
+    "cssstudio": "^1.2.0",
     "date-fns": "^4.4.0",
     "dotenv": "^17.2.3",
     "express": "^4.21.2",

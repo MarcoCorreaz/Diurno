@@ -36,7 +36,7 @@ export function TaskSheet({ isOpen, onClose, onSave, initialData }: TaskSheetPro
     
     // Convert time to 12h format if needed or just use as is for simplicity
     onSave({
-      id: initialData?.id || Math.random().toString(36).substr(2, 9),
+      id: initialData?.id || crypto.randomUUID(),
       title,
       category,
       time,

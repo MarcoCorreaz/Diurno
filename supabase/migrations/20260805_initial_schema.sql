@@ -41,12 +41,13 @@ CREATE POLICY "Usuários podem deletar seu próprio perfil"
 
 -- 2. Criação da tabela de tarefas/hábitos (tasks)
 CREATE TABLE IF NOT EXISTS public.tasks (
-    id TEXT PRIMARY KEY,
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     title TEXT NOT NULL DEFAULT '',
     time TEXT DEFAULT '',
     category TEXT DEFAULT '',
     day_of_week TEXT,
     completed BOOLEAN DEFAULT FALSE,
+    completed_at DATE,
     user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
     current_streak INTEGER DEFAULT 0,
     max_streak INTEGER DEFAULT 0,

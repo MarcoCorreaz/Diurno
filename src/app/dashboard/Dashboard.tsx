@@ -23,6 +23,13 @@ export default function Dashboard() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loadingTasks, setLoadingTasks] = useState(true);
   
+  const { currentUser } = useAuth();
+  const [isSheetOpen, setIsSheetOpen] = useState(false);
+  const [taskToEdit, setTaskToEdit] = useState<Task | null>(null);
+  const [showConfetti, setShowConfetti] = useState(false);
+  const [hideInsight, setHideInsight] = useState(false);
+  const [generatingRoutine, setGeneratingRoutine] = useState(false);
+  
   useEffect(() => {
     if (!currentUser) {
       navigate("/login");
@@ -30,13 +37,30 @@ export default function Dashboard() {
     }
 
     const fetchTasks = async () => {
+      const daysMap = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sab'];
+      const todayId = daysMap[new Date().getDay()];
+
       const { data, error } = await supabase
         .from("tasks")
         .select("*")
-        .eq("user_id", currentUser.id);
+        .eq("user_id", currentUser.id)
+        .eq("day_of_week", todayId);
 
       if (!error && data) {
-        setTasks(data.map((d: any) => toTask(d.id, d)));
+        const parsedTasks = data.map((d: any) => toTask(d.id, d));
+        
+        // Verifica reset diário
+        const todayStr = new Date().toISOString().split('T')[0];
+        const tasksToUpdate = parsedTasks.filter(t => t.completed && (!t.completedAt || !t.completedAt.startsWith(todayStr)));
+        
+        if (tasksToUpdate.length > 0) {
+          await Promise.all(tasksToUpdate.map(t => 
+            supabase.from("tasks").update({ completed: false }).eq("id", t.id)
+          ));
+          // Os tasks atualizados serão recebidos via subscription realtime
+        } else {
+          setTasks(parsedTasks);
+        }
       }
       setLoadingTasks(false);
     };
@@ -63,12 +87,6 @@ export default function Dashboard() {
       supabase.removeChannel(channel);
     };
   }, [currentUser, navigate]);
-  const [isSheetOpen, setIsSheetOpen] = useState(false);
-  const [taskToEdit, setTaskToEdit] = useState<Task | null>(null);
-  const [showConfetti, setShowConfetti] = useState(false);
-  const { currentUser } = useAuth();
-  const [hideInsight, setHideInsight] = useState(false);
-  const [generatingRoutine, setGeneratingRoutine] = useState(false);
 
   const generateAIRoutine = async () => {
     if (!currentUser) return;
@@ -76,7 +94,7 @@ export default function Dashboard() {
     try {
       const defaultTasks = [
         {
-          id: "ia-morning-" + Date.now(),
+          id: crypto.randomUUID(),
           title: "Foco e Clareza Matinal (Meditação ou Leitura)",
           time: "07:30",
           category: "Manhã",
@@ -87,7 +105,7 @@ export default function Dashboard() {
           totalCompletions: 0,
         },
         {
-          id: "ia-afternoon-" + (Date.now() + 1),
+          id: crypto.randomUUID(),
           title: "Bloco de Execução Principal",
           time: "14:00",
           category: "Tarde",
@@ -98,7 +116,7 @@ export default function Dashboard() {
           totalCompletions: 0,
         },
         {
-          id: "ia-evening-" + (Date.now() + 2),
+          id: crypto.randomUUID(),
           title: "Revisão e Desconexão Digital",
           time: "21:00",
           category: "Noite",
@@ -124,8 +142,8 @@ export default function Dashboard() {
           const cleanJson = data.text.replace(/```json/g, "").replace(/```/g, "").trim();
           const parsed = JSON.parse(cleanJson);
           if (Array.isArray(parsed) && parsed.length >= 3) {
-            smartTasks = parsed.slice(0, 3).map((item: any, idx: number) => ({
-              id: "ia-task-" + Date.now() + "-" + idx,
+            smartTasks = parsed.slice(0, 3).map((item: any) => ({
+              id: crypto.randomUUID(),
               title: item.title || "Hábito IA",
               time: item.time || "08:00",
               category: item.category || "Manhã",
@@ -251,6 +269,7 @@ export default function Dashboard() {
     try {
       const { error } = await supabase.from("tasks").update({
         completed: isCompleted,
+        completed_at: isCompleted ? new Date().toISOString() : null,
         updated_at: new Date().toISOString(),
       }).eq("id", id);
       if (error) throw error;

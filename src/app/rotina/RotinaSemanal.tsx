@@ -162,6 +162,7 @@ export default function RotinaSemanal() {
     try {
       const { error } = await supabase.from("tasks").update({
         completed: isCompleted,
+        completed_at: isCompleted ? new Date().toISOString() : null,
         updated_at: new Date().toISOString(),
       }).eq("id", taskId);
       if (error) throw error;

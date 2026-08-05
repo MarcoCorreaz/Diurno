@@ -11,6 +11,7 @@ export interface Task {
   totalCompletions: number;
   createdAt: string;
   updatedAt: string;
+  completedAt?: string;
 }
 
 export interface UserProfile {
@@ -43,5 +44,6 @@ export function toTask(id: string, data: Record<string, any>): Task {
     totalCompletions: (data.totalCompletions || data.total_completions) ?? 0,
     createdAt: data.createdAt || data.created_at || new Date().toISOString(),
     updatedAt: data.updatedAt || data.updated_at || new Date().toISOString(),
+    completedAt: data.completedAt || data.completed_at || undefined,
   };
 }
