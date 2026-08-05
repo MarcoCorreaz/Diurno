@@ -22,6 +22,7 @@ export default function Dashboard() {
   const navigate = useNavigate();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loadingTasks, setLoadingTasks] = useState(true);
+  const [userPlan, setUserPlan] = useState("free");
   
   const { currentUser } = useAuth();
   const [isSheetOpen, setIsSheetOpen] = useState(false);
@@ -65,7 +66,13 @@ export default function Dashboard() {
       setLoadingTasks(false);
     };
 
+    const fetchPlan = async () => {
+      const { data } = await supabase.from("profiles").select("plan").eq("id", currentUser.id).single();
+      if (data) setUserPlan(data.plan.toLowerCase());
+    };
+
     fetchTasks();
+    fetchPlan();
 
     const channel = supabase
       .channel("tasks_channel")
@@ -282,6 +289,18 @@ export default function Dashboard() {
   const totalCount = tasks.length || 1; 
   const completionRate = Math.round((completedCount / totalCount) * 100);
 
+  const handleOpenTaskSheet = () => {
+    if ((userPlan === "free" || userPlan === "básico") && tasks.length >= 5) {
+      toast.error("Limite de hábitos atingido", {
+        description: "Assine o plano Pro para adicionar hábitos ilimitados."
+      });
+      navigate("/planos");
+      return;
+    }
+    setTaskToEdit(null);
+    setIsSheetOpen(true);
+  };
+
   const containerVariants = {
     hidden: { opacity: 0 },
     show: { opacity: 1, transition: { staggerChildren: 0.1 } }
@@ -328,10 +347,7 @@ export default function Dashboard() {
                 </p>
                 <div className="mt-6 md:mt-8 flex flex-col sm:flex-row items-start sm:items-center gap-4 relative z-10">
                   <Button 
-                    onClick={() => {
-                      setTaskToEdit(null);
-                      setIsSheetOpen(true);
-                    }}
+                    onClick={handleOpenTaskSheet}
                     className="w-full sm:w-auto" shape="pill" size="lg"
                   >
                     Novo Hábito
@@ -376,7 +392,7 @@ export default function Dashboard() {
                 {tasks.filter(t => !t.completed).length} Pendentes
               </span>
               <Button 
-                onClick={() => { setTaskToEdit(null); setIsSheetOpen(true); }}
+                onClick={handleOpenTaskSheet}
                 shape="pill" className="flex items-center gap-2 text-xs md:text-sm font-medium"
               >
                 Novo Hábito

@@ -1,1 +1,10 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512"><rect width="512" height="512" fill="#1C1C1A"/><circle cx="256" cy="256" r="128" fill="#F9F9F6"/></svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <!-- Fundo escuro com cantos arredondados -->
+  <rect width="512" height="512" rx="110" fill="#18181B"/>
+  <!-- Arco (sol/lua) -->
+  <path d="M 158 256 A 98 98 0 0 1 256 158 A 98 98 0 0 1 354 256 A 98 98 0 0 1 256 354 A 98 98 0 0 0 158 256 Z" fill="none" stroke="#F9F9F6" stroke-width="24" stroke-linecap="round"/>
+  <!-- Linha vertical (timeline) -->
+  <line x1="256" y1="116" x2="256" y2="396" stroke="#F9F9F6" stroke-width="24" stroke-linecap="round"/>
+  <!-- Linha horizontal (horizonte) -->
+  <line x1="116" y1="256" x2="396" y2="218" stroke="#F9F9F6" stroke-width="24" stroke-linecap="round"/>
+</svg>

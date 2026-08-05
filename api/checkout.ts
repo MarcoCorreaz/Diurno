@@ -17,35 +17,41 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(400).json({ error: "Missing required fields" });
     }
 
-    // Map plans to actual Stripe Prices or hardcode amounts for demo
-    const amount = planName === "Pro" && cycle === "monthly" ? 2900 
-                 : planName === "Pro" && cycle === "yearly" ? 29000
-                 : planName === "Vitalício" ? 49900 : 0;
+    const priceId = planName === "Pro" && cycle === "monthly" ? process.env.STRIPE_PRICE_PRO_MONTHLY
+                  : planName === "Pro" && cycle === "yearly" ? process.env.STRIPE_PRICE_PRO_YEARLY
+                  : planName === "Vitalício" ? process.env.STRIPE_PRICE_LIFETIME : null;
 
-    if (amount === 0) {
+    // Fallback if priceIds are not set (uses dynamic price_data)
+    const amount = planName === "Pro" && cycle === "monthly" ? 1700 
+                 : planName === "Pro" && cycle === "yearly" ? 16700
+                 : planName === "Vitalício" ? 19700 : 0;
+
+    if (!priceId && amount === 0) {
       return res.status(400).json({ error: "Invalid plan" });
     }
 
-    const session = await stripe.checkout.sessions.create({
-      payment_method_types: ["card"],
-      mode: cycle === "yearly" && planName === "Vitalício" ? "payment" : "subscription",
-      line_items: [
-        {
+    const lineItem = priceId 
+      ? { price: priceId, quantity: 1 }
+      : {
           price_data: {
             currency: "brl",
             product_data: {
               name: `Diurno ${planName}`,
             },
             unit_amount: amount,
-            recurring: cycle === "yearly" && planName === "Vitalício" ? undefined : {
+            recurring: planName === "Vitalício" ? undefined : {
               interval: cycle === "yearly" ? "year" : "month",
             },
           },
           quantity: 1,
-        },
-      ],
-      success_url: `${process.env.APP_URL || "http://localhost:5173"}/dashboard?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${process.env.APP_URL || "http://localhost:5173"}/planos`,
+        };
+
+    const session = await stripe.checkout.sessions.create({
+      payment_method_types: ["card"],
+      mode: planName === "Vitalício" ? "payment" : "subscription",
+      line_items: [lineItem as any],
+      success_url: `${process.env.APP_URL || "http://localhost:5173"}/sucesso?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${process.env.APP_URL || "http://localhost:5173"}/cancelado`,
       client_reference_id: userId,
       metadata: {
         userId,

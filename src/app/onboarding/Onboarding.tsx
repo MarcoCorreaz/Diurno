@@ -9,12 +9,16 @@ import { ShimmerButton } from "@/components/engagement/ShimmerButton";
 import { Brain, Target, Zap, ArrowRight, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useLenis } from "@/hooks/use-lenis";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/lib/supabase";
+import { toast } from "sonner";
 
 gsap.registerPlugin(ScrollTrigger);
 
 export default function Onboarding() {
   useLenis();
   const navigate = useNavigate();
+  const { currentUser } = useAuth();
   const [step, setStep] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -84,8 +88,27 @@ export default function Onboarding() {
     setStep(1);
   };
 
-  const finishOnboarding = () => {
-    navigate("/register", { state: { goal, energy, routineDetails } });
+  const finishOnboarding = async () => {
+    if (currentUser) {
+      try {
+        const { error } = await supabase
+          .from("profiles")
+          .update({
+            goal: goal,
+            energy: energy,
+            routine_details: routineDetails
+          })
+          .eq("id", currentUser.id);
+
+        if (error) throw error;
+        toast.success("Perfil configurado com sucesso!");
+        navigate("/dashboard");
+      } catch (err) {
+        toast.error("Erro ao salvar as preferências.");
+      }
+    } else {
+      navigate("/register", { state: { goal, energy, routineDetails } });
+    }
   };
 
   return (

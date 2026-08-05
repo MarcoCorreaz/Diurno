@@ -4,6 +4,7 @@
  */
 
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { Analytics } from "@vercel/analytics/react";
 import { Toaster } from "@/components/ui/sonner";
 import { ThemeProvider } from "@/components/providers/theme-provider";
 import { AuthProvider } from "@/contexts/AuthContext";
@@ -18,6 +19,8 @@ import RotinaSemanal from "./app/rotina/RotinaSemanal";
 import HabitoDetalhe from "./app/habito/HabitoDetalhe";
 import Settings from "./app/settings/Settings";
 import Subscription from "./app/subscription/Subscription";
+import Success from "./app/subscription/Success";
+import Canceled from "./app/subscription/Canceled";
 import Profile from "./app/profile/Profile";
 
 export default function App() {
@@ -37,12 +40,15 @@ export default function App() {
             <Route path="/habito/:id" element={<HabitoDetalhe />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="/planos" element={<Subscription />} />
+            <Route path="/sucesso" element={<Success />} />
+            <Route path="/cancelado" element={<Canceled />} />
             <Route path="/perfil" element={<Profile />} />
           </Route>
         </Routes>
       </BrowserRouter>
       </AuthProvider>
       <Toaster position="bottom-right" />
+      <Analytics />
     </ThemeProvider>
   );
 }

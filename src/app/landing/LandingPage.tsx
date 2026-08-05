@@ -215,8 +215,8 @@ export default function LandingPage() {
             }}
             className="mb-16 text-center"
           >
-            <h2 className="font-sans text-4xl md:text-5xl font-semibold mb-6 text-foreground tracking-tight">Invista no seu tempo.</h2>
-            <p className="text-muted-foreground text-lg max-w-xl mx-auto mb-8">Comece de graça e assine quando precisar de mais poder.</p>
+            <h2 className="font-sans text-4xl md:text-5xl font-semibold mb-6 text-foreground tracking-tight">Invista na sua evolução.</h2>
+            <p className="text-muted-foreground text-lg max-w-xl mx-auto mb-8">Domine sua rotina por menos de um café por mês. Comece de graça e evolua no seu ritmo.</p>
             
             <div className="flex items-center justify-center gap-2 bg-secondary p-1.5 rounded-full border border-border shadow-sm inline-flex mx-auto">
               <button

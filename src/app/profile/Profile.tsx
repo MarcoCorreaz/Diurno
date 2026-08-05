@@ -101,6 +101,27 @@ export default function Profile() {
     navigate("/login");
   };
 
+  const handleManageSubscription = async () => {
+    if (userProfile.plan === "Free" || userProfile.plan === "Básico") {
+      navigate("/planos");
+      return;
+    }
+    
+    try {
+      const res = await fetch("/api/portal", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ customerId: currentUser?.uid }) // Na versão real, enviaríamos o customer_id do Stripe que estaria no DB. Mas vamos enviar o ID do usuário para o backend decidir, ou pedir login no portal
+      });
+      const data = await res.json();
+      if (data.url) {
+        window.location.href = data.url;
+      }
+    } catch (err) {
+      toast.error("Erro ao acessar o portal do cliente.");
+    }
+  };
+
   const weeklyChartData = [
     { day: "Seg", progresso: Math.min(100, Math.max(40, (statsData.completions * 12) % 100 || 60)) },
     { day: "Ter", progresso: Math.min(100, Math.max(50, (statsData.completions * 22) % 100 || 75)) },
@@ -210,7 +231,7 @@ export default function Profile() {
 
           {/* Subscription and Settings */}
           <section className="bg-card border border-border rounded-3xl overflow-hidden shadow-sm">
-            <Link to="/planos" className="p-5 flex items-center justify-between border-b border-border hover:bg-secondary/50 transition-colors group">
+            <button onClick={handleManageSubscription} className="w-full text-left p-5 flex items-center justify-between border-b border-border hover:bg-secondary/50 transition-colors group">
               <div className="flex items-center gap-4">
                 <div className="w-10 h-10 rounded-xl bg-background border border-border shadow-sm flex items-center justify-center text-foreground group-hover:bg-foreground group-hover:text-background transition-colors">
                   <CreditCard className="w-5 h-5" />
@@ -226,7 +247,7 @@ export default function Profile() {
                   &rarr;
                 </div>
               </div>
-            </Link>
+            </button>
 
             <button onClick={handleLogout} className="w-full p-5 flex items-center justify-between hover:bg-red-500/5 transition-colors text-red-500 group">
               <div className="flex items-center gap-4">

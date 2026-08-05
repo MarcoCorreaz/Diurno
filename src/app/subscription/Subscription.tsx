@@ -32,8 +32,8 @@ export const PLANS = [
     name: "Pro",
     description: "Para quem quer dominar o tempo e atingir metas.",
     price: {
-      monthly: "29",
-      yearly: "290"
+      monthly: "17",
+      yearly: "167"
     },
     features: [
       "Hábitos ilimitados",
@@ -51,8 +51,8 @@ export const PLANS = [
     name: "Vitalício",
     description: "Acesso sem limites para os mais dedicados.",
     price: {
-      monthly: "499",
-      yearly: "499"
+      monthly: "197",
+      yearly: "197"
     },
     features: [
       "Tudo do plano Pro",
