@@ -41,6 +41,11 @@ export default function RotinaSemanal() {
 
   const { currentUser } = useAuth();
 
+  const [isSheetOpen, setIsSheetOpen] = useState(false);
+  const [taskToEdit, setTaskToEdit] = useState<Task | null>(null);
+  const [showConfetti, setShowConfetti] = useState(false);
+  const { scheduleTaskReminder } = useNotifications();
+
   useEffect(() => {
     if (!currentUser) {
       navigate("/login");
@@ -88,10 +93,6 @@ export default function RotinaSemanal() {
       supabase.removeChannel(channel);
     };
   }, [currentUser, navigate]);
-  const [isSheetOpen, setIsSheetOpen] = useState(false);
-  const [taskToEdit, setTaskToEdit] = useState<Task | null>(null);
-  const [showConfetti, setShowConfetti] = useState(false);
-  const { scheduleTaskReminder } = useNotifications();
 
   const handleSaveTask = async (newTask: Partial<Task> & { id: string }) => {
     if (!currentUser) return;
