@@ -14,7 +14,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const { customerId } = req.body;
 
     if (!customerId) {
-      return res.status(400).json({ error: "Missing customerId" });
+      return res.status(400).json({ error: "Usuário não possui ID de cliente no Stripe." });
+    }
+
+    if (!customerId.startsWith("cus_")) {
+      return res.status(400).json({ error: "ID de cliente inválido. Nenhuma fatura encontrada." });
     }
 
     const session = await stripe.billingPortal.sessions.create({
@@ -25,6 +29,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(200).json({ url: session.url });
   } catch (error: any) {
     console.error("Stripe Portal Error:", error);
-    return res.status(500).json({ error: "Internal Server Error" });
+    return res.status(500).json({ error: error.message || "Internal Server Error" });
   }
 }
+

@@ -52,7 +52,8 @@ export default function Dashboard() {
         .eq("user_id", currentUser.id)
         .eq("day_of_week", todayId);
 
-      const todayStr = new Date().toISOString().split('T')[0];
+      const today = new Date();
+      const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
       
       const { data: compsData } = await supabase
         .from("task_completions")
@@ -110,10 +111,16 @@ export default function Dashboard() {
     setGeneratingRoutine(true);
     
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+      
       let smartTasks: any[] = [];
       const res = await fetch("/api/chat", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}` 
+        },
         body: JSON.stringify({
           message: "Gere exatamente 3 hábitos diários para produtividade e bem-estar (um para Manhã, um para Tarde e um para Noite). Responda APENAS com um JSON Array válido assim: [{\"title\":\"Meditação Matinal\",\"time\":\"07:30\",\"category\":\"Manhã\"},{\"title\":\"Foco no Projeto Principal\",\"time\":\"14:00\",\"category\":\"Tarde\"},{\"title\":\"Revisão do Dia\",\"time\":\"20:30\",\"category\":\"Noite\"}] sem texto extra."
         }),
@@ -250,7 +257,8 @@ export default function Dashboard() {
     // Atualização otimista na interface
     setTasks(prev => prev.map(t => t.id === id ? { ...t, completed: isCompleted } : t));
     
-    const todayStr = new Date().toISOString().split('T')[0];
+    const today = new Date();
+    const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
 
     if (isCompleted) {
       setShowConfetti(true);

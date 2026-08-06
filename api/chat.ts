@@ -22,6 +22,28 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return res.status(401).json({ error: "Unauthorized. Missing token." });
+    }
+    const token = authHeader.split(" ")[1];
+
+    const supabaseUrl = process.env.VITE_SUPABASE_URL;
+    const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY;
+
+    if (!supabaseUrl || !supabaseKey) {
+       return res.status(500).json({ error: "Missing Supabase configuration." });
+    }
+
+    const { createClient } = require("@supabase/supabase-js");
+    const supabase = createClient(supabaseUrl, supabaseKey);
+
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+
+    if (authError || !user) {
+      return res.status(401).json({ error: "Unauthorized. Invalid token." });
+    }
+
     const { message } = req.body;
     if (!message) {
       return res.status(400).json({ error: "Message is required" });

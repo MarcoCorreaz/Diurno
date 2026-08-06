@@ -2,14 +2,34 @@ import Stripe from "stripe";
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { createClient } from "@supabase/supabase-js";
 
+// Vercel config to disable body parsing so we can read the raw body for Stripe signature verification
+export const config = {
+  api: {
+    bodyParser: false,
+  },
+};
+
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string, {
   apiVersion: "2024-06-20" as any,
 });
 
 const supabaseUrl = process.env.VITE_SUPABASE_URL as string;
-const supabaseServiceRole = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY as string;
+const supabaseServiceRole = process.env.SUPABASE_SERVICE_ROLE_KEY as string;
 
-const supabase = createClient(supabaseUrl, supabaseServiceRole);
+if (!supabaseServiceRole) {
+  console.warn("WARNING: SUPABASE_SERVICE_ROLE_KEY is not set. Webhooks will fail RLS.");
+}
+
+const supabase = createClient(supabaseUrl, supabaseServiceRole || process.env.VITE_SUPABASE_ANON_KEY as string);
+
+// Helper to get raw body
+async function getRawBody(req: VercelRequest): Promise<string> {
+  let body = "";
+  for await (const chunk of req) {
+    body += chunk;
+  }
+  return body;
+}
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== "POST") {
@@ -19,20 +39,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const sig = req.headers["stripe-signature"] as string;
   const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET as string;
 
-  let event;
+  let event: Stripe.Event;
 
   try {
+    const rawBody = await getRawBody(req);
     if (endpointSecret) {
       event = stripe.webhooks.constructEvent(
-        req.body,
+        rawBody,
         sig,
         endpointSecret
       );
     } else {
-      event = req.body;
+      // Fallback if no secret is provided (not recommended for production)
+      event = JSON.parse(rawBody);
     }
   } catch (err: any) {
-    console.error("Webhook Error:", err.message);
+    console.error("Webhook Signature Error:", err.message);
     return res.status(400).send(`Webhook Error: ${err.message}`);
   }
 
@@ -41,19 +63,40 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const session = event.data.object as Stripe.Checkout.Session;
       
       const userId = session.client_reference_id || session.metadata?.userId;
-      let plan = session.metadata?.plan || "pro"; 
+      const plan = session.metadata?.plan || "pro"; 
+      const customerId = session.customer as string;
 
       if (userId) {
-        console.log(`Atualizando plano do usuário ${userId} para ${plan}`);
+        console.log(`Atualizando plano do usuário ${userId} para ${plan} com cliente ${customerId}`);
         
         const { error } = await supabase
           .from("profiles")
-          .update({ plan: plan.charAt(0).toUpperCase() + plan.slice(1) })
+          .update({ 
+            plan: plan.charAt(0).toUpperCase() + plan.slice(1),
+            stripe_customer_id: customerId
+          })
           .eq("id", userId);
 
         if (error) {
           console.error("Erro ao atualizar Supabase:", error);
           throw error;
+        }
+      }
+    } 
+    else if (event.type === "customer.subscription.deleted") {
+      const subscription = event.data.object as Stripe.Subscription;
+      const customerId = subscription.customer as string;
+
+      if (customerId) {
+        console.log(`Assinatura cancelada/expirada para cliente ${customerId}. Voltando para plano Free.`);
+        
+        const { error } = await supabase
+          .from("profiles")
+          .update({ plan: "Free" })
+          .eq("stripe_customer_id", customerId);
+
+        if (error) {
+          console.error("Erro ao atualizar Supabase no downgrade:", error);
         }
       }
     }
@@ -64,3 +107,4 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     res.status(500).json({ error: "Internal Server Error" });
   }
 }
+

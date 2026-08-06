@@ -4,7 +4,7 @@ import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import Sidebar from "@/components/layout/Sidebar";
-import { Target, Trophy, CreditCard, LogOut, Camera, Crown, Flame } from "lucide-react";
+import { Target, Trophy, CreditCard, LogOut, Camera, Crown, Flame, Lock } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
@@ -19,12 +19,14 @@ export default function Profile() {
     avatar: string;
     plan: string;
     memberSince: string;
+    stripeCustomerId: string;
   }>({
     name: currentUser?.displayName || "Usuário",
     email: currentUser?.email || "",
     avatar: currentUser?.photoURL || "https://github.com/shadcn.png",
     plan: "Free",
-    memberSince: "Carregando..."
+    memberSince: "Carregando...",
+    stripeCustomerId: ""
   });
   const [isUploading, setIsUploading] = useState(false);
 
@@ -52,13 +54,15 @@ export default function Profile() {
             email: data.email || prev.email,
             avatar: data.avatar_url || prev.avatar,
             plan: data.plan || "Free",
-            memberSince: memberSinceStr
+            memberSince: memberSinceStr,
+            stripeCustomerId: data.stripe_customer_id || ""
           }));
         } else {
           setUserProfile(prev => ({
             ...prev,
             plan: "Free",
-            memberSince: memberSinceStr
+            memberSince: memberSinceStr,
+            stripeCustomerId: ""
           }));
         }
       };
@@ -88,7 +92,7 @@ export default function Profile() {
   const stats = [
     { label: "Sequência", value: `${statsData.streak} dias`, icon: Flame, color: "text-[#FF4500]" },
     { label: "Concluídas", value: `${statsData.completions}`, icon: Target, color: "text-foreground" },
-    { label: "Conquistas", value: "Em breve", icon: Trophy, color: "text-[#EAB308]" },
+    { label: "Conquistas", value: "Em breve", icon: Lock, color: "text-muted-foreground opacity-50" },
   ];
 
   const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -153,15 +157,22 @@ export default function Profile() {
       return;
     }
     
+    if (!userProfile.stripeCustomerId) {
+      toast.error("Você ainda não possui faturas ativas no Stripe.");
+      return;
+    }
+    
     try {
       const res = await fetch("/api/portal", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ customerId: currentUser?.uid }) // Na versão real, enviaríamos o customer_id do Stripe que estaria no DB. Mas vamos enviar o ID do usuário para o backend decidir, ou pedir login no portal
+        body: JSON.stringify({ customerId: userProfile.stripeCustomerId }) 
       });
       const data = await res.json();
-      if (data.url) {
+      if (res.ok && data.url) {
         window.location.href = data.url;
+      } else {
+        toast.error(data.error || "Erro ao acessar o portal do cliente.");
       }
     } catch (err) {
       toast.error("Erro ao acessar o portal do cliente.");
