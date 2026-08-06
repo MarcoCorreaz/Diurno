@@ -73,7 +73,7 @@ export function ScrollExperienceSection() {
   }, { scope: sectionRef });
 
   return (
-    <section ref={sectionRef} className="relative bg-background border-t border-border overflow-hidden">
+    <section ref={sectionRef} className="relative border-t border-border">
       {/* Container Pinado */}
       <div
         ref={triggerRef}

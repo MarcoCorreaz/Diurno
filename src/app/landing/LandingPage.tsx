@@ -165,7 +165,7 @@ export default function LandingPage() {
       <ScrollExperienceSection />
 
       {/* Features */}
-      <section className="py-32 px-6 bg-background border-t border-border">
+      <section className="py-32 px-6 border-t border-border">
         <div className="max-w-6xl mx-auto">
           <motion.div 
             initial="initial"
@@ -237,7 +237,7 @@ export default function LandingPage() {
       </section>
 
       {/* Pricing Section */}
-      <section className="py-32 px-6 bg-background border-t border-border">
+      <section className="py-32 px-6 border-t border-border">
         <div className="max-w-6xl mx-auto">
           <motion.div 
             initial="initial"
@@ -381,7 +381,7 @@ export default function LandingPage() {
         </motion.div>
       </section>
       
-      <footer className="py-12 text-center text-sm text-muted-foreground border-t border-border bg-background">
+      <footer className="py-12 text-center text-sm text-muted-foreground border-t border-border">
         <p>&copy; 2026 Diurno. Todos os direitos reservados.</p>
       </footer>
     </div>
