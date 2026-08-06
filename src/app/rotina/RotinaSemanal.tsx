@@ -14,6 +14,7 @@ import { getCategoryColor } from "@/lib/categories";
 import Sidebar from "@/components/layout/Sidebar";
 import { useNotifications } from "@/hooks/use-notifications";
 import { Confetti } from "@/components/effects/Confetti";
+import { ExpandableTabs } from "@/components/ui/ExpandableTabs";
 
 import { startOfWeek, addDays, addWeeks, format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -37,6 +38,7 @@ export default function RotinaSemanal() {
   const [weekOffset, setWeekOffset] = useState(0);
   const [direction, setDirection] = useState(0);
   const [localRoutine, setLocalRoutine] = useState<Record<string, Task[]>>({});
+  const [completions, setCompletions] = useState<Record<string, boolean>>({});
   const [loading, setLoading] = useState(true);
 
   const { currentUser } = useAuth();
@@ -67,6 +69,19 @@ export default function RotinaSemanal() {
           }
         });
         setLocalRoutine(newRoutine);
+      }
+      
+      const { data: compsData, error: compsError } = await supabase
+        .from("task_completions")
+        .select("*")
+        .eq("user_id", currentUser.id);
+
+      if (!compsError && compsData) {
+        const newComps: Record<string, boolean> = {};
+        compsData.forEach(c => {
+          newComps[`${c.task_id}_${c.completed_date}`] = true;
+        });
+        setCompletions(newComps);
       }
       setLoading(false);
     };
@@ -132,6 +147,7 @@ export default function RotinaSemanal() {
       return {
         ...config,
         date: format(dayDate, "dd"),
+        isoDate: format(dayDate, "yyyy-MM-dd"),
         full: `${config.full} (${format(dayDate, "dd 'de' MMMM", { locale: ptBR })})`,
       };
     });
@@ -149,26 +165,37 @@ export default function RotinaSemanal() {
     const dayTasks = localRoutine[activeDay] || [];
     const task = dayTasks.find((t: Task) => t.id === taskId);
     if (!task) return;
-    const isCompleted = !task.completed;
+    
+    const dateKey = activeDayData.isoDate;
+    const compKey = `${taskId}_${dateKey}`;
+    const isCompleted = !completions[compKey];
+    
+    // Otimista (UX instantâneo)
+    setCompletions(prev => ({ ...prev, [compKey]: isCompleted }));
     
     if (isCompleted) {
         setShowConfetti(true);
         toast.success("Hábito concluído!", {
             description: "Você está no caminho certo. Continue assim!"
         });
+        try {
+          await supabase.from("task_completions").insert({
+            task_id: taskId,
+            user_id: currentUser!.id,
+            completed_date: dateKey
+          });
+        } catch (error) {
+          console.error("Erro ao registrar log de tarefa:", error);
+        }
     } else {
         toast.info("Hábito desmarcado.");
-    }
-    
-    try {
-      const { error } = await supabase.from("tasks").update({
-        completed: isCompleted,
-        completed_at: isCompleted ? new Date().toISOString() : null,
-        updated_at: new Date().toISOString(),
-      }).eq("id", taskId);
-      if (error) throw error;
-    } catch (error) {
-      console.error("Erro ao atualizar hábito:", error);
+        try {
+          await supabase.from("task_completions")
+            .delete()
+            .match({ task_id: taskId, completed_date: dateKey });
+        } catch (error) {
+          console.error("Erro ao remover log de tarefa:", error);
+        }
     }
   };
 
@@ -239,33 +266,23 @@ export default function RotinaSemanal() {
           </div>
 
           {/* Week Days Tabs */}
-          <div className="flex items-center gap-1 md:gap-2 p-1 bg-secondary/30 backdrop-blur-sm border border-border rounded-2xl relative overflow-x-auto no-scrollbar shadow-sm">
-            {weekDays.map((day) => {
-              const isActive = activeDay === day.id;
-              return (
-                <button
-                  key={day.id}
-                  onClick={() => setActiveDay(day.id)}
-                  className={cn(
-                    "relative flex-1 min-w-[60px] flex flex-col items-center justify-center py-2 md:py-3 rounded-xl transition-colors z-10",
-                    isActive ? "text-foreground" : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
-                  )}
-                >
-                  {isActive && (
-                    <motion.div
-                      layoutId="activeDayTab"
-                      className="absolute inset-0 bg-background border border-border rounded-xl shadow-sm -z-10"
-                      transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                    />
-                  )}
-                  <span className="text-[9px] md:text-[10px] font-medium uppercase tracking-wider mb-1">{day.label}</span>
-                  <span className={cn("font-mono text-base md:text-lg font-semibold", isActive ? "text-foreground" : "text-muted-foreground")}>
-                    {day.date}
-                  </span>
-                </button>
-              );
-
-            })}
+          {/* Week Days Tabs */}
+          <div className="w-full flex justify-center overflow-x-auto no-scrollbar py-2">
+            <ExpandableTabs
+              tabs={weekDays.map((day) => ({
+                id: day.id,
+                label: day.full.split(' ')[0], // Só "Segunda-feira", sem a data formatada grande
+                icon: (
+                  <div className="flex flex-col items-center justify-center">
+                    <span className="text-[9px] md:text-[10px] font-medium uppercase tracking-wider mb-0.5">{day.label}</span>
+                    <span className="font-mono text-base md:text-lg font-semibold leading-none">{day.date}</span>
+                  </div>
+                )
+              }))}
+              activeTab={activeDay}
+              onChange={(id) => setActiveDay(id)}
+              className="flex-nowrap"
+            />
           </div>
         </header>
 
@@ -305,7 +322,7 @@ export default function RotinaSemanal() {
                     whileTap={{ scale: 0.99 }}
                     className={cn(
                       "group flex items-center justify-between p-5 rounded-2xl border transition-colors cursor-pointer shadow-sm",
-                      task.completed 
+                      completions[`${task.id}_${activeDayData.isoDate}`] 
                         ? "bg-transparent border-muted opacity-50" 
                         : "bg-background border-border hover:border-foreground/30 hover:shadow-md"
                     )}
@@ -316,7 +333,7 @@ export default function RotinaSemanal() {
                         type="button"
                         whileHover={{ scale: 1.1 }}
                         whileTap={{ scale: 0.8 }}
-                        animate={task.completed ? { scale: [1, 1.25, 1] } : {}}
+                        animate={completions[`${task.id}_${activeDayData.isoDate}`] ? { scale: [1, 1.25, 1] } : {}}
                         transition={{ type: "spring", stiffness: 400, damping: 15 }}
                         onClick={(e) => {
                           e.stopPropagation();
@@ -324,12 +341,12 @@ export default function RotinaSemanal() {
                         }}
                         className={cn(
                           "flex-shrink-0 w-6 h-6 rounded-md border-2 flex items-center justify-center transition-colors",
-                          task.completed 
+                          completions[`${task.id}_${activeDayData.isoDate}`] 
                             ? "bg-foreground border-foreground text-background" 
                             : "border-border group-hover:border-foreground"
                         )}
                       >
-                        {task.completed && (
+                        {completions[`${task.id}_${activeDayData.isoDate}`] && (
                           <Check className="w-4 h-4 stroke-[3px]" />
                         )}
                       </motion.button>
@@ -338,14 +355,14 @@ export default function RotinaSemanal() {
                         <div className="flex items-center gap-2">
                           <h3 className={cn(
                             "font-medium transition-colors text-[15px]",
-                            task.completed ? "text-muted-foreground line-through" : "text-foreground"
+                            completions[`${task.id}_${activeDayData.isoDate}`] ? "text-muted-foreground line-through" : "text-foreground"
                           )}>
                             {task.title}
                           </h3>
                           {task.category && (
                             <span className={cn(
                               "text-[10px] px-2 py-0.5 rounded-full font-medium border",
-                              task.completed ? "border-transparent bg-transparent text-muted-foreground" : "border-border bg-secondary text-foreground"
+                              completions[`${task.id}_${activeDayData.isoDate}`] ? "border-transparent bg-transparent text-muted-foreground" : "border-border bg-secondary text-foreground"
                             )}>
                               {task.category}
                             </span>

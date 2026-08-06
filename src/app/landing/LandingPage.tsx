@@ -12,7 +12,7 @@ import { AnimatedTitle } from "@/components/effects/AnimatedTitle";
 import { BorderBeam } from "@/components/effects/BorderBeam";
 import { TextRotate } from "@/components/effects/TextRotate";
 import { TextShimmer } from "@/components/effects/TextShimmer";
-import { GradientGlow } from "@/components/effects/GradientGlow";
+import { BackgroundGradientAnimation } from "@/components/ui/BackgroundGradientAnimation";
 import { ShineButton } from "@/components/effects/ShineButton";
 
 export default function LandingPage() {
@@ -36,9 +36,9 @@ export default function LandingPage() {
     <div className="min-h-screen bg-background text-foreground selection:bg-foreground selection:text-background overflow-x-clip font-sans relative">
       
       {/* Absolute container that spans the full page height, with a sticky child to simulate a fixed background without pushing content down or being broken by Framer Motion. */}
-      <div className="absolute inset-0 pointer-events-none overflow-hidden z-0">
-        <div className="sticky top-0 w-full h-screen flex items-center justify-center">
-          <GradientGlow />
+      <div className="absolute inset-0 overflow-hidden z-0 pointer-events-auto">
+        <div className="sticky top-0 w-full h-screen">
+          <BackgroundGradientAnimation />
         </div>
       </div>
 

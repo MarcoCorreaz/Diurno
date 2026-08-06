@@ -10,13 +10,16 @@ import { useLenis } from "@/hooks/use-lenis";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { TaskSheet } from "@/components/features/TaskSheet";
-import { AIChatWidget } from "@/components/features/AIChatWidget";
+import { AIAssistantWidget } from "@/components/ui/AIAssistantWidget";
 import Sidebar from "@/components/layout/Sidebar";
 import { useNotifications } from "@/hooks/use-notifications";
 import { Confetti } from "@/components/effects/Confetti";
 import { SummaryWidget } from "@/components/features/SummaryWidget";
 import { AnimatedCounter } from "@/components/effects/AnimatedCounter";
 import { TutorialTour } from "@/components/features/TutorialTour";
+import { HighlightCard } from "@/components/ui/HighlightCard";
+import { MovingDotCard } from "@/components/ui/MovingDotCard";
+import { ElegantDarkPattern } from "@/components/ui/ElegantDarkPattern";
 
 
 export default function Dashboard() {
@@ -49,21 +52,22 @@ export default function Dashboard() {
         .eq("user_id", currentUser.id)
         .eq("day_of_week", todayId);
 
+      const todayStr = new Date().toISOString().split('T')[0];
+      
+      const { data: compsData } = await supabase
+        .from("task_completions")
+        .select("task_id")
+        .eq("user_id", currentUser.id)
+        .eq("completed_date", todayStr);
+
       if (!error && data) {
-        const parsedTasks = data.map((d: any) => toTask(d.id, d));
-        
-        // Verifica reset diário
-        const todayStr = new Date().toISOString().split('T')[0];
-        const tasksToUpdate = parsedTasks.filter(t => t.completed && (!t.completedAt || !t.completedAt.startsWith(todayStr)));
-        
-        if (tasksToUpdate.length > 0) {
-          await Promise.all(tasksToUpdate.map(t => 
-            supabase.from("tasks").update({ completed: false }).eq("id", t.id)
-          ));
-          // Os tasks atualizados serão recebidos via subscription realtime
-        } else {
-          setTasks(parsedTasks);
-        }
+        const completedTaskIds = new Set(compsData?.map(c => c.task_id) || []);
+        const parsedTasks = data.map((d: any) => {
+           const task = toTask(d.id, d);
+           task.completed = completedTaskIds.has(task.id);
+           return task;
+        });
+        setTasks(parsedTasks);
       }
       setLoadingTasks(false);
     };
@@ -104,77 +108,42 @@ export default function Dashboard() {
   const generateAIRoutine = async () => {
     if (!currentUser) return;
     setGeneratingRoutine(true);
+    
     try {
-      const defaultTasks = [
-        {
-          id: crypto.randomUUID(),
-          title: "Foco e Clareza Matinal (Meditação ou Leitura)",
-          time: "07:30",
-          category: "Manhã",
-          completed: false,
-          userId: currentUser.uid,
-          currentStreak: 0,
-          maxStreak: 0,
-          totalCompletions: 0,
-        },
-        {
-          id: crypto.randomUUID(),
-          title: "Bloco de Execução Principal",
-          time: "14:00",
-          category: "Tarde",
-          completed: false,
-          userId: currentUser.uid,
-          currentStreak: 0,
-          maxStreak: 0,
-          totalCompletions: 0,
-        },
-        {
-          id: crypto.randomUUID(),
-          title: "Revisão e Desconexão Digital",
-          time: "21:00",
-          category: "Noite",
-          completed: false,
-          userId: currentUser.uid,
-          currentStreak: 0,
-          maxStreak: 0,
-          totalCompletions: 0,
-        },
-      ];
-
       let smartTasks: any[] = [];
-      try {
-        const res = await fetch("/api/chat", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            message: "Gere exatamente 3 hábitos diários para produtividade e bem-estar (um para Manhã, um para Tarde e um para Noite). Responda APENAS com um JSON Array válido assim: [{\"title\":\"Meditação Matinal\",\"time\":\"07:30\",\"category\":\"Manhã\"},{\"title\":\"Foco no Projeto Principal\",\"time\":\"14:00\",\"category\":\"Tarde\"},{\"title\":\"Revisão do Dia\",\"time\":\"20:30\",\"category\":\"Noite\"}] sem texto extra."
-          }),
-        });
-        if (res.ok) {
-          const data = await res.json();
-          const cleanJson = data.text.replace(/```json/g, "").replace(/```/g, "").trim();
-          const parsed = JSON.parse(cleanJson);
-          if (Array.isArray(parsed) && parsed.length >= 3) {
-            smartTasks = parsed.slice(0, 3).map((item: any) => ({
-              id: crypto.randomUUID(),
-              title: item.title || "Hábito IA",
-              time: item.time || "08:00",
-              category: item.category || "Manhã",
-              completed: false,
-              userId: currentUser.uid,
-              currentStreak: 0,
-              maxStreak: 0,
-              totalCompletions: 0,
-            }));
-          }
-        }
-      } catch (e) {
-        console.log("Usando sugestões offline inteligentes da IA", e);
+      const res = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          message: "Gere exatamente 3 hábitos diários para produtividade e bem-estar (um para Manhã, um para Tarde e um para Noite). Responda APENAS com um JSON Array válido assim: [{\"title\":\"Meditação Matinal\",\"time\":\"07:30\",\"category\":\"Manhã\"},{\"title\":\"Foco no Projeto Principal\",\"time\":\"14:00\",\"category\":\"Tarde\"},{\"title\":\"Revisão do Dia\",\"time\":\"20:30\",\"category\":\"Noite\"}] sem texto extra."
+        }),
+      });
+
+      if (!res.ok) {
+        throw new Error("Falha ao comunicar com a IA. Verifique sua chave API.");
       }
 
-      const tasksToCreate = smartTasks.length >= 3 ? smartTasks : defaultTasks;
+      const data = await res.json();
+      const cleanJson = data.text.replace(/```json/g, "").replace(/```/g, "").trim();
+      const parsed = JSON.parse(cleanJson);
+      
+      if (Array.isArray(parsed) && parsed.length >= 3) {
+        smartTasks = parsed.slice(0, 3).map((item: any) => ({
+          id: crypto.randomUUID(),
+          title: item.title || "Hábito IA",
+          time: item.time || "08:00",
+          category: item.category || "Manhã",
+          completed: false,
+          userId: currentUser.uid,
+          currentStreak: 0,
+          maxStreak: 0,
+          totalCompletions: 0,
+        }));
+      } else {
+        throw new Error("A IA retornou um formato inválido.");
+      }
 
-      for (const t of tasksToCreate) {
+      for (const t of smartTasks) {
         await supabase.from("tasks").upsert({
           id: t.id,
           title: t.title,
@@ -266,28 +235,40 @@ export default function Dashboard() {
   };
 
   const toggleTask = async (id: string) => {
-    const task = tasks.find(t => t.id === id);
+    const task = tasks.find((t) => t.id === id);
     if (!task) return;
     const isCompleted = !task.completed;
     
+    // Atualização otimista na interface
+    setTasks(prev => prev.map(t => t.id === id ? { ...t, completed: isCompleted } : t));
+    
+    const todayStr = new Date().toISOString().split('T')[0];
+
     if (isCompleted) {
       setShowConfetti(true);
       toast.success("Hábito concluído!", {
         description: "Você está no caminho certo. Continue assim!"
       });
+      try {
+        await supabase.from("task_completions").insert({
+          task_id: id,
+          user_id: currentUser!.id,
+          completed_date: todayStr
+        });
+      } catch (error) {
+        console.error("Erro ao registrar hábito:", error);
+        toast.error("Falha de conexão ao salvar progresso.");
+      }
     } else {
       toast.info("Hábito desmarcado.");
-    }
-
-    try {
-      const { error } = await supabase.from("tasks").update({
-        completed: isCompleted,
-        completed_at: isCompleted ? new Date().toISOString() : null,
-        updated_at: new Date().toISOString(),
-      }).eq("id", id);
-      if (error) throw error;
-    } catch (error) {
-      console.error("Erro ao atualizar hábito:", error);
+      try {
+        await supabase.from("task_completions").delete().match({
+          task_id: id,
+          completed_date: todayStr
+        });
+      } catch (error) {
+        console.error("Erro ao desmarcar hábito:", error);
+      }
     }
   };
 
@@ -318,7 +299,7 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="flex flex-col md:flex-row h-[100dvh] w-full bg-background text-foreground font-sans overflow-hidden selection:bg-foreground selection:text-background">
+    <ElegantDarkPattern className="flex flex-col md:flex-row h-[100dvh] text-foreground font-sans selection:bg-foreground selection:text-background">
       <Sidebar />
 
       <main className="flex-1 p-6 md:p-10 flex flex-col overflow-y-auto pb-24 md:pb-10">
@@ -412,24 +393,26 @@ export default function Dashboard() {
                <div className="w-8 h-8 rounded-full border-4 border-muted border-t-foreground animate-spin"></div>
             </div>
           ) : tasks.length === 0 ? (
-            <div className="p-8 md:p-12 text-center text-muted-foreground border border-dashed border-border rounded-3xl bg-secondary/20 flex flex-col items-center justify-center gap-4">
-              <p className="text-base font-medium text-foreground">Nenhum hábito programado para hoje.</p>
-              <p className="text-xs text-muted-foreground max-w-md">Que tal deixar nossa Inteligência Artificial estruturar uma rotina inicial equilibrada para a sua Manhã, Tarde e Noite?</p>
-              <Button 
-                onClick={generateAIRoutine}
-                disabled={generatingRoutine}
-                shape="pill" 
-                size="lg"
-                className="mt-2 flex items-center gap-2 bg-foreground text-background hover:opacity-90"
-              >
-                {generatingRoutine ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <Sparkles className="w-4 h-4 text-[#EAB308]" />
-                )}
-                {generatingRoutine ? "Criando hábitos..." : "Gerar Minha Rotina com IA"}
-              </Button>
-            </div>
+            <MovingDotCard className="my-4">
+              <div className="p-8 md:p-12 text-center text-muted-foreground flex flex-col items-center justify-center gap-4">
+                <p className="text-base font-medium text-foreground">Nenhum hábito programado para hoje.</p>
+                <p className="text-xs text-muted-foreground max-w-md">Que tal deixar nossa Inteligência Artificial estruturar uma rotina inicial equilibrada para a sua Manhã, Tarde e Noite?</p>
+                <Button 
+                  onClick={generateAIRoutine}
+                  disabled={generatingRoutine}
+                  shape="pill" 
+                  size="lg"
+                  className="mt-2 flex items-center gap-2 bg-foreground text-background hover:opacity-90"
+                >
+                  {generatingRoutine ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Sparkles className="w-4 h-4 text-[#EAB308]" />
+                  )}
+                  {generatingRoutine ? "Criando hábitos..." : "Gerar Minha Rotina com IA"}
+                </Button>
+              </div>
+            </MovingDotCard>
           ) : (
             <motion.ul 
               initial="hidden"
@@ -443,14 +426,17 @@ export default function Dashboard() {
                   whileHover={{ scale: 1.01, y: -2 }}
                   whileTap={{ scale: 0.99 }}
                   transition={{ type: "spring", stiffness: 400, damping: 25 }}
-                  className={cn(
-                    "group flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 md:p-5 rounded-2xl border transition-colors cursor-pointer shadow-sm",
-                    task.completed 
-                      ? "bg-transparent border-muted opacity-50" 
-                      : "bg-background border-border hover:border-foreground/30 hover:shadow-md"
-                  )}
                   onClick={() => navigate(`/habito/${task.id}`)}
+                  className="list-none"
                 >
+                  <HighlightCard
+                    className={cn(
+                      "flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 md:p-5 rounded-[2rem] transition-colors cursor-pointer shadow-sm",
+                      task.completed 
+                        ? "bg-transparent opacity-50" 
+                        : "bg-background"
+                    )}
+                  >
                   <div className="flex items-center gap-3 md:gap-4">
                     <motion.button
                       type="button"
@@ -499,8 +485,9 @@ export default function Dashboard() {
                 <span className="text-xs font-mono text-muted-foreground uppercase tracking-tighter sm:ml-auto">
                   {task.time}
                 </span>
-              </motion.li>
-            ))}
+                  </HighlightCard>
+                </motion.li>
+              ))}
           </motion.ul>
           )}
         </section>
@@ -543,11 +530,11 @@ export default function Dashboard() {
         initialData={taskToEdit}
       />
       
-      <AIChatWidget />
+      <AIAssistantWidget />
       
       {currentUser && <TutorialTour userId={currentUser.id} />}
       
       <Confetti isActive={showConfetti} onComplete={() => setShowConfetti(false)} />
-    </div>
+    </ElegantDarkPattern>
   );
 }

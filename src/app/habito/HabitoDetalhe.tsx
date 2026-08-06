@@ -14,6 +14,7 @@ import { PomodoroTimer } from "@/components/features/PomodoroTimer";
 import { subDays, format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import Sidebar from "@/components/layout/Sidebar";
+import { ProgressCard } from "@/components/ui/ProgressCard";
 
 
 
@@ -24,21 +25,24 @@ export default function HabitoDetalhe() {
   const [activeTab, setActiveTab] = useState<"visao-geral" | "historico" | "foco">("visao-geral");
 
   const [habitData, setHabitData] = useState<Task | null>(null);
+  const [completionsSet, setCompletionsSet] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
 
   const { chartData, history } = React.useMemo(() => {
     if (!habitData) return { chartData: [], history: [] };
     const days = 14;
-    const currentStreak = habitData.currentStreak || 0;
     const items = [];
     const chart = [];
     let accumulatedScore = 0;
 
     for (let i = days - 1; i >= 0; i--) {
       const date = subDays(new Date(), i);
+      const isoDate = format(date, "yyyy-MM-dd");
       const formattedDate = format(date, "dd MMM", { locale: ptBR });
       const fullDate = format(date, "dd 'de' MMMM, yyyy", { locale: ptBR });
-      const isCompleted = i < currentStreak;
+      
+      const isCompleted = completionsSet.has(isoDate);
+      
       if (isCompleted) {
         accumulatedScore += 2;
       }
@@ -51,12 +55,12 @@ export default function HabitoDetalhe() {
         date: fullDate,
         status: isCompleted ? "completed" : "missed",
         note: isCompleted
-          ? `Hábito "${habitData.title}" concluído com sucesso no horário programado.`
+          ? `Hábito "${habitData.title}" concluído com sucesso.`
           : undefined,
       });
     }
     return { chartData: chart, history: items.reverse() };
-  }, [habitData]);
+  }, [habitData, completionsSet]);
 
   useEffect(() => {
     if (!id) return;
@@ -70,6 +74,15 @@ export default function HabitoDetalhe() {
 
       if (!error && data) {
         setHabitData(toTask(data.id, data));
+        
+        const { data: compsData } = await supabase
+          .from("task_completions")
+          .select("completed_date")
+          .eq("task_id", id);
+          
+        if (compsData) {
+          setCompletionsSet(new Set(compsData.map(c => c.completed_date)));
+        }
       } else {
         setHabitData(null);
       }
@@ -102,23 +115,24 @@ export default function HabitoDetalhe() {
   const handleMarkAsDone = async () => {
     if (!id || !habitData) return;
     try {
-      const newStreak = (habitData.currentStreak || 0) + 1;
-      const newTotal = (habitData.totalCompletions || 0) + 1;
-      const newMax = Math.max(habitData.maxStreak || 0, newStreak);
-      const { error } = await supabase.from("tasks").update({
-        completed: true,
-        current_streak: newStreak,
-        total_completions: newTotal,
-        max_streak: newMax,
-        updated_at: new Date().toISOString()
-      }).eq("id", id);
-      if (error) throw error;
-      toast.success("Hábito marcado como feito!", {
-        description: "Streak mantido. Ótimo trabalho!",
+      const todayStr = new Date().toISOString().split('T')[0];
+      const { error } = await supabase.from("task_completions").insert({
+        task_id: id,
+        user_id: habitData.userId,
+        completed_date: todayStr
       });
+      if (error) throw error;
+      
+      toast.success("Hábito marcado como feito!", {
+        description: "Progresso salvo com sucesso!",
+      });
+      
+      const newSet = new Set(completionsSet);
+      newSet.add(todayStr);
+      setCompletionsSet(newSet);
     } catch (error) {
       console.error("Erro ao marcar hábito como feito:", error);
-      toast.error("Erro ao atualizar hábito.");
+      toast.error("Erro ao salvar progresso.");
     }
   };
 
@@ -192,23 +206,14 @@ export default function HabitoDetalhe() {
 
           {/* Secondary Stats */}
           <div className="col-span-1 lg:col-span-2 grid grid-cols-2 gap-4 md:gap-6">
-            <div className="bg-secondary/30 border border-border rounded-3xl p-4 md:p-6 flex flex-col justify-between shadow-sm">
-              <div className="w-8 h-8 md:w-10 md:h-10 bg-background rounded-full flex items-center justify-center mb-3 md:mb-4 border border-border shadow-sm">
-                <Target className="w-4 h-4 md:w-5 md:h-5 text-foreground" />
-              </div>
-              <div>
-                <p className="text-muted-foreground text-[10px] md:text-sm mb-1">Taxa de Conclusão</p>
-                <div className="flex items-baseline gap-1 md:gap-2">
-                  <NumberTicker 
-                    value={habitData.totalCompletions > 0 
-                      ? Math.round((habitData.currentStreak / Math.max(habitData.totalCompletions, 1)) * 100) 
-                      : 0} 
-                    className="font-mono text-2xl md:text-4xl font-semibold text-foreground" 
-                  />
-                  <span className="text-muted-foreground text-xs md:text-base">%</span>
-                </div>
-              </div>
-            </div>
+            <ProgressCard
+              progress={habitData.totalCompletions > 0 
+                ? Math.round((habitData.currentStreak / Math.max(habitData.totalCompletions, 1)) * 100) 
+                : 0}
+              title="Taxa de Conclusão"
+              subtitle="Consistência do Hábito"
+              className="bg-secondary/30 shadow-sm"
+            />
 
             <div className="bg-secondary/30 border border-border rounded-3xl p-4 md:p-6 flex flex-col justify-between shadow-sm">
               <div className="w-8 h-8 md:w-10 md:h-10 bg-background rounded-full flex items-center justify-center mb-3 md:mb-4 border border-border shadow-sm">

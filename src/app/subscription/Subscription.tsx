@@ -2,6 +2,7 @@
 import React, { useState } from "react";
 import { motion } from "framer-motion";
 import { Check, Sparkles, Zap, Shield, Target, Clock, Feather } from "lucide-react";
+import { PremiumGoldCard } from "@/components/ui/PremiumGoldCard";
 import { cn } from "@/lib/utils";
 import { useLenis } from "@/hooks/use-lenis";
 import { useNavigate } from "react-router-dom";
@@ -138,18 +139,8 @@ export default function Subscription() {
               const price = billingCycle === "monthly" ? plan.price.monthly : plan.price.yearly;
               const isLifetime = plan.name === "Vitalício";
               
-              return (
-                <motion.div
-                  key={plan.name}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5, delay: 0.1 * (idx + 1) }}
-                  className={cn(
-                    "relative flex flex-col p-6 md:p-8 rounded-3xl transition-all duration-300",
-                    isPro ? "bg-background border-2 border-foreground md:scale-105 shadow-md z-10" : "bg-secondary/50 border border-border",
-                    !isPro && "hover:border-foreground/20 hover:bg-secondary"
-                  )}
-                >
+              const PlanContent = () => (
+                <>
                   {isPro && (
                     <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-foreground text-background text-xs font-semibold uppercase tracking-wider px-4 py-1 rounded-full shadow-sm z-20">
                       Mais Escolhido
@@ -222,6 +213,29 @@ export default function Subscription() {
                       </div>
                     ))}
                   </div>
+                </>
+              );
+
+              return (
+                <motion.div
+                  key={plan.name}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5, delay: 0.1 * (idx + 1) }}
+                  className={cn("h-full", isPro && "md:scale-105 z-10")}
+                >
+                  {isPro ? (
+                    <PremiumGoldCard className="h-full flex flex-col">
+                      <PlanContent />
+                    </PremiumGoldCard>
+                  ) : (
+                    <div className={cn(
+                      "relative flex flex-col p-6 md:p-8 rounded-3xl transition-all duration-300 h-full",
+                      "bg-secondary/50 border border-border hover:border-foreground/20 hover:bg-secondary"
+                    )}>
+                      <PlanContent />
+                    </div>
+                  )}
                 </motion.div>
               );
             })}
