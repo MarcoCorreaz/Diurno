@@ -3,7 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
+import { AnimatePresence } from "framer-motion";
 import { Analytics } from "@vercel/analytics/react";
 import { Toaster } from "@/components/ui/sonner";
 import { ThemeProvider } from "@/components/providers/theme-provider";
@@ -22,19 +23,34 @@ import Subscription from "./app/subscription/Subscription";
 import Success from "./app/subscription/Success";
 import Canceled from "./app/subscription/Canceled";
 import Profile from "./app/profile/Profile";
+import { PageTransition } from "@/components/effects/PageTransition";
 
 export default function App() {
   return (
     <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
       <AuthProvider>
         <BrowserRouter>
-        <Routes>
+          <AppRoutes />
+        </BrowserRouter>
+      </AuthProvider>
+      <Toaster position="bottom-right" />
+      <Analytics />
+    </ThemeProvider>
+  );
+}
+
+function AppRoutes() {
+  const location = useLocation();
+  return (
+    <AnimatePresence mode="wait">
+      <PageTransition routeKey={location.pathname}>
+        <Routes location={location}>
           <Route path="/" element={<LandingPage />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/recuperar-senha" element={<RecoverPassword />} />
-          <Route path="/onboarding" element={<Onboarding />} />
           <Route element={<ProtectedRoute />}>
+            <Route path="/onboarding" element={<Onboarding />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/rotina" element={<RotinaSemanal />} />
             <Route path="/habito/:id" element={<HabitoDetalhe />} />
@@ -45,10 +61,7 @@ export default function App() {
             <Route path="/perfil" element={<Profile />} />
           </Route>
         </Routes>
-      </BrowserRouter>
-      </AuthProvider>
-      <Toaster position="bottom-right" />
-      <Analytics />
-    </ThemeProvider>
+      </PageTransition>
+    </AnimatePresence>
   );
 }

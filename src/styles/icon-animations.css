@@ -1,0 +1,82 @@
+/* ==========================================================================
+   Diurno — Icon Animation Utilities
+   Inspirado no Font Awesome (fa-beat, fa-bounce, fa-fade, fa-spin, fa-shake)
+   Leve e reutilizável com qualquer ícone SVG/Lucide.
+   ========================================================================== */
+
+/* Beat — pulsação de escala (ideal para check ao completar hábito) */
+.icon-beat {
+  animation: icon-beat 0.8s ease-in-out;
+}
+.icon-beat-loop {
+  animation: icon-beat 1s ease-in-out infinite;
+}
+@keyframes icon-beat {
+  0%, 100% { transform: scale(1); }
+  45% { transform: scale(1.3); }
+}
+
+/* Bounce — efeito de salto (ideal para streaks) */
+.icon-bounce {
+  animation: icon-bounce 1s ease;
+}
+.icon-bounce-loop {
+  animation: icon-bounce 1s ease infinite;
+}
+@keyframes icon-bounce {
+  0%, 100% {
+    transform: translateY(0);
+    animation-timing-function: cubic-bezier(0.2, 0.6, 0.4, 1);
+  }
+  30% {
+    transform: translateY(-30%) scaleY(1.05);
+    animation-timing-function: cubic-bezier(0.6, 0, 0.8, 0.4);
+  }
+  50% {
+    transform: translateY(-15%);
+    animation-timing-function: cubic-bezier(0.2, 0.6, 0.4, 1);
+  }
+  70% {
+    transform: translateY(-5%);
+  }
+}
+
+/* Fade — pulsação de opacidade (ideal para estados de loading ou período ativo) */
+.icon-fade {
+  animation: icon-fade 2s ease-in-out infinite;
+}
+@keyframes icon-fade {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
+
+/* Spin — rotação contínua (ideal para loaders) */
+.icon-spin {
+  animation: icon-spin 1s linear infinite;
+}
+@keyframes icon-spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Shake — vibração lateral (ideal para alertas/erros) */
+.icon-shake {
+  animation: icon-shake 0.5s ease-in-out;
+}
+@keyframes icon-shake {
+  0%, 100% { transform: rotate(0deg); }
+  15% { transform: rotate(-15deg); }
+  30% { transform: rotate(12deg); }
+  45% { transform: rotate(-9deg); }
+  60% { transform: rotate(6deg); }
+  75% { transform: rotate(-3deg); }
+}
+
+/* Beat-Fade — combinação escala + opacidade (uso especial) */
+.icon-beat-fade {
+  animation: icon-beat-fade 1.2s ease-in-out infinite;
+}
+@keyframes icon-beat-fade {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.15); opacity: 0.5; }
+}

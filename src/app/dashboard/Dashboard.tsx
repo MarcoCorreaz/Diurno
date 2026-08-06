@@ -15,6 +15,8 @@ import Sidebar from "@/components/layout/Sidebar";
 import { useNotifications } from "@/hooks/use-notifications";
 import { Confetti } from "@/components/effects/Confetti";
 import { SummaryWidget } from "@/components/features/SummaryWidget";
+import { AnimatedCounter } from "@/components/effects/AnimatedCounter";
+import { TutorialTour } from "@/components/features/TutorialTour";
 
 
 export default function Dashboard() {
@@ -67,7 +69,11 @@ export default function Dashboard() {
     };
 
     const fetchPlan = async () => {
-      const { data } = await supabase.from("profiles").select("plan").eq("id", currentUser.id).single();
+      const { data, error } = await supabase.from("profiles").select("plan").eq("id", currentUser.id).single();
+      if (error && error.code === 'PGRST116') {
+        navigate("/onboarding");
+        return;
+      }
       if (data) setUserPlan(data.plan.toLowerCase());
     };
 
@@ -303,12 +309,12 @@ export default function Dashboard() {
 
   const containerVariants = {
     hidden: { opacity: 0 },
-    show: { opacity: 1, transition: { staggerChildren: 0.1 } }
+    show: { opacity: 1, transition: { staggerChildren: 0.06 } }
   };
 
   const itemVariants = {
-    hidden: { opacity: 0, y: 15 },
-    show: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 300, damping: 24 } }
+    hidden: { opacity: 0, y: 15, filter: "blur(8px)" },
+    show: { opacity: 1, y: 0, filter: "blur(0px)", transition: { type: "spring", stiffness: 200, damping: 20 } }
   };
 
   return (
@@ -465,7 +471,7 @@ export default function Dashboard() {
                     >
                       {task.completed && (
                         <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring" }}>
-                          <Check className="w-3 h-3 md:w-4 md:h-4 stroke-[3px]" />
+                          <Check className="w-3 h-3 md:w-4 md:h-4 stroke-[3px] icon-beat" />
                         </motion.div>
                       )}
                     </motion.button>
@@ -507,7 +513,7 @@ export default function Dashboard() {
             <h4 className="text-sm font-medium text-foreground">Progresso de Hoje</h4>
           </div>
           <div className="flex items-center gap-4">
-            <div className="font-mono text-4xl font-bold tracking-tight text-foreground transition-all">{completionRate}%</div>
+            <div className="font-mono text-4xl font-bold tracking-tight text-gradient transition-all"><AnimatedCounter value={completionRate} suffix="%" /></div>
             <div className="h-1 flex-1 bg-secondary rounded-full overflow-hidden">
               <div className="h-full bg-foreground transition-all" style={{ width: `${completionRate}%` }}></div>
             </div>
@@ -536,8 +542,10 @@ export default function Dashboard() {
         onSave={handleSaveTask}
         initialData={taskToEdit}
       />
-
+      
       <AIChatWidget />
+      
+      {currentUser && <TutorialTour userId={currentUser.id} />}
       
       <Confetti isActive={showConfetti} onComplete={() => setShowConfetti(false)} />
     </div>

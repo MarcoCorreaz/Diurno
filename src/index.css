@@ -3,18 +3,25 @@
 @import "shadcn/tailwind.css";
 @import "@fontsource-variable/geist";
 @import "@fontsource-variable/geist-mono";
+@import "./styles/icon-animations.css";
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400;1,700&display=swap');
 
 @custom-variant dark (&:is(.dark *));
 
 @theme {
   --font-sans: 'Geist Variable', 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   --font-mono: 'Geist Mono Variable', 'Geist Mono', monospace;
+  --font-display: 'Playfair Display', Georgia, 'Times New Roman', serif;
 
   --color-border: hsl(var(--border));
   --color-input: hsl(var(--input));
   --color-ring: hsl(var(--ring));
   --color-background: hsl(var(--background));
   --color-foreground: hsl(var(--foreground));
+  --color-card: hsl(var(--card));
+  --color-card-foreground: hsl(var(--card-foreground));
+  --color-popover: hsl(var(--popover));
+  --color-popover-foreground: hsl(var(--popover-foreground));
   --color-primary: hsl(var(--primary));
   --color-primary-foreground: hsl(var(--primary-foreground));
   --color-secondary: hsl(var(--secondary));
@@ -41,7 +48,42 @@
 }
 
 @layer base {
-  :root,
+  :root {
+    --background: 0 0% 99%;
+    --foreground: 0 0% 9%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 9%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 9%;
+
+    --primary: 0 0% 9%;
+    --primary-foreground: 0 0% 98%;
+
+    --secondary: 0 0% 95%;
+    --secondary-foreground: 0 0% 9%;
+
+    --accent: 0 0% 95%;
+    --accent-foreground: 0 0% 9%;
+
+    --muted: 0 0% 95%;
+    --muted-foreground: 0 0% 45.1%;
+
+    --border: 0 0% 89.8%;
+    --input: 0 0% 89.8%;
+    --ring: 0 0% 3.9%;
+
+    --radius: 12px;
+    --radius-lg: 16px;
+    
+    --chart-1: 12 76% 61%;
+    --chart-2: 173 58% 39%;
+    --chart-3: 197 37% 24%;
+    --chart-4: 43 74% 66%;
+    --chart-5: 27 87% 67%;
+  }
+
   .dark {
     /* Dark Mode Absoluto - Vercel & Linear Standard (#0A0A0A) */
     --background: 0 0% 3.9%; /* #0A0A0A */
@@ -85,7 +127,7 @@
     @apply border-border selection:bg-primary/20 selection:text-foreground;
   }
   body {
-    @apply bg-[#0A0A0A] text-zinc-50 font-sans antialiased overflow-x-hidden;
+    @apply bg-background text-foreground font-sans antialiased overflow-x-hidden;
   }
 }
 
@@ -103,43 +145,115 @@
    Diurno Design System — Craft · Memory · Consistency Utilitários
    ========================================================================== */
 
-/* 1. Scrollbar customizado escuro para evitar scrollbar branco no Windows */
+/* 1. Scrollbar customizado usando variáveis do tema */
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #0A0A0A;
+  background: hsl(var(--background));
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #262626;
+  background: hsl(var(--secondary));
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #3F3F46;
+  background: hsl(var(--muted-foreground));
 }
 
 /* 2. Utilitários de Superfície e Profundidade (Elevation Hierarchy) */
 @layer utilities {
   .surface-0 {
-    @apply bg-[#0A0A0A];
+    @apply bg-background;
   }
   .surface-1 {
-    @apply bg-[#101010] border border-white/10;
+    @apply bg-card border border-border;
   }
   .surface-2 {
-    @apply bg-white/[0.04] border border-white/10;
+    @apply bg-secondary border border-border;
   }
   .surface-hover {
-    @apply transition-all duration-200 hover:border-white/20 hover:bg-white/[0.03];
+    @apply transition-all duration-200 hover:border-foreground/20 hover:bg-foreground/5;
   }
   .focus-ring {
-    @apply focus:outline-none focus-visible:ring-2 focus-visible:ring-white/20 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0A0A0A];
+    @apply focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background;
   }
 }
 
+/* ==========================================================================
+   3. Premium Animation Keyframes & Utilities
+   ========================================================================== */
 
+/* Shimmer — reflexo metálico horizontal sobre texto */
+@keyframes shimmer {
+  0% { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
 
+.animate-shimmer {
+  background: linear-gradient(
+    90deg,
+    hsl(var(--foreground)) 0%,
+    hsl(var(--muted-foreground)) 40%,
+    hsl(var(--foreground)) 50%,
+    hsl(var(--muted-foreground)) 60%,
+    hsl(var(--foreground)) 100%
+  );
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: shimmer 3s ease-in-out infinite;
+}
+
+/* Glow Pulse — pulsação radial suave para backgrounds */
+@keyframes glow-pulse {
+  0%   { transform: translate(-50%, -50%) scale(1);    opacity: 1; }
+  50%  { transform: translate(-49%, -51%) scale(1.06); opacity: 0.8; }
+  100% { transform: translate(-50%, -50%) scale(1);    opacity: 1; }
+}
+
+.animate-glow-pulse {
+  animation: glow-pulse 10s ease-in-out infinite;
+}
+
+/* Glow Enter — entrada do glow vindo de baixo */
+@keyframes glow-enter {
+  0%   { opacity: 0; transform: translateY(40vh); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+.animate-glow-enter {
+  animation: glow-enter 1.6s cubic-bezier(0.33, 1, 0.68, 1) 0.8s both;
+}
+
+/* Text Gradient — gradiente vertical sutil para números grandes */
+.text-gradient {
+  background: linear-gradient(180deg, hsl(var(--foreground)) 0%, hsl(var(--muted-foreground)) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ==========================================================================
+   4. Accessibility — Reduced Motion
+   ========================================================================== */
+@media (prefers-reduced-motion: reduce) {
+  .animate-shimmer,
+  .animate-glow-pulse,
+  .animate-glow-enter,
+  .animate-border-beam,
+  .icon-beat,
+  .icon-beat-loop,
+  .icon-bounce,
+  .icon-bounce-loop,
+  .icon-fade,
+  .icon-spin,
+  .icon-shake,
+  .icon-beat-fade {
+    animation: none !important;
+  }
+}

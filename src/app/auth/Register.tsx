@@ -83,7 +83,7 @@ export default function Register() {
         await saveUserToSupabase(data.user);
       }
 
-      navigate("/dashboard");
+      navigate("/onboarding");
     } catch (error: any) {
       let message = error.message;
       if (error.message?.includes("User already registered")) {

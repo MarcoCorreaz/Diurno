@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ArrowRight, Clock, Calendar, CheckCircle2, Check } from "lucide-react";
@@ -10,10 +10,21 @@ import { ScrollExperienceSection } from "@/components/landing/ScrollExperienceSe
 import { SpotlightCard } from "@/components/effects/SpotlightCard";
 import { AnimatedTitle } from "@/components/effects/AnimatedTitle";
 import { BorderBeam } from "@/components/effects/BorderBeam";
+import { TextRotate } from "@/components/effects/TextRotate";
+import { TextShimmer } from "@/components/effects/TextShimmer";
+import { GradientGlow } from "@/components/effects/GradientGlow";
+import { ShineButton } from "@/components/effects/ShineButton";
 
 export default function LandingPage() {
   useLenis();
   const [billingCycle, setBillingCycle] = useState<"monthly" | "yearly">("yearly");
+  const [scrolled, setScrolled] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => setScrolled(window.scrollY > 50);
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
   const fadeUp = {
     initial: { opacity: 0, y: 20 },
@@ -24,12 +35,17 @@ export default function LandingPage() {
   return (
     <div className="min-h-screen bg-background text-foreground selection:bg-foreground selection:text-background overflow-x-hidden font-sans">
       
-      {/* Header */}
+      {/* Floating Navbar — scroll-aware header inspired by 21st.dev */}
       <motion.header 
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6, delay: 0.1 }}
-        className="absolute top-0 w-full px-6 md:px-12 py-8 flex items-center justify-between z-50"
+        className={cn(
+          "sticky top-0 w-full px-6 md:px-12 py-6 flex items-center justify-between z-50 transition-all duration-300",
+          scrolled
+            ? "bg-background/80 backdrop-blur-xl border-b border-border/50 shadow-sm py-4"
+            : "bg-transparent border-b border-transparent"
+        )}
       >
         <div className="font-sans text-xl font-semibold tracking-tight">Diurno.</div>
         <div className="flex items-center gap-6">
@@ -40,13 +56,21 @@ export default function LandingPage() {
         </div>
       </motion.header>
 
-      {/* Hero */}
-      <section className="pt-40 pb-20 px-6 max-w-6xl mx-auto flex flex-col lg:flex-row items-center lg:items-start gap-16 min-h-[90vh]">
-        <div className="flex-1 lg:pt-16">
+      {/* Hero — with GradientGlow, TextRotate & ShineButton */}
+      <section className="relative pt-32 pb-20 px-6 max-w-6xl mx-auto flex flex-col lg:flex-row items-center lg:items-start gap-16 min-h-[90vh]">
+        <GradientGlow />
+        <div className="flex-1 lg:pt-16 relative z-10">
           <AnimatedTitle 
-            text={["Seu dia,", "no seu ritmo."]} 
-            className="font-sans text-5xl md:text-7xl font-semibold leading-[1.05] tracking-tight mb-8 text-foreground" 
+            text={["Seu dia,"]} 
+            className="font-sans text-5xl md:text-7xl font-semibold leading-[1.05] tracking-tight mb-2 text-foreground" 
           />
+          <div className="text-5xl md:text-7xl font-semibold leading-[1.05] tracking-tight mb-8 text-foreground flex items-baseline gap-3 flex-wrap">
+            <span className="font-sans">no seu</span>
+            <TextRotate
+              words={["ritmo.", "controle.", "fluxo.", "foco."]}
+              className="font-display italic text-foreground"
+            />
+          </div>
           <motion.p 
             {...fadeUp}
             transition={{ ...fadeUp.transition, delay: 0.1 }}
@@ -59,9 +83,11 @@ export default function LandingPage() {
             transition={{ ...fadeUp.transition, delay: 0.2 }}
             className="flex items-center gap-4"
           >
-            <Link to="/onboarding" className={cn(buttonVariants({ size: "xl", shape: "pill", className: "gap-3" }))}>
-              Organizar meu dia <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-            </Link>
+            <ShineButton className={cn(buttonVariants({ size: "xl", shape: "pill", className: "gap-3" }))}>
+              <Link to="/onboarding" className="flex items-center gap-3">
+                Organizar meu dia <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+              </Link>
+            </ShineButton>
           </motion.div>
         </div>
 
@@ -143,7 +169,7 @@ export default function LandingPage() {
             }}
             className="mb-20"
           >
-            <h2 className="font-sans text-4xl md:text-5xl font-semibold mb-6 text-foreground tracking-tight">Construído para a realidade.</h2>
+            <TextShimmer className="font-sans text-4xl md:text-5xl font-semibold mb-6 text-foreground tracking-tight">Construído para a realidade.</TextShimmer>
             <p className="text-muted-foreground text-lg max-w-xl">Nada de dashboards poluídos. Apenas o que importa para o seu progresso diário, sem promessas mágicas.</p>
           </motion.div>
           
@@ -215,7 +241,7 @@ export default function LandingPage() {
             }}
             className="mb-16 text-center"
           >
-            <h2 className="font-sans text-4xl md:text-5xl font-semibold mb-6 text-foreground tracking-tight">Invista na sua evolução.</h2>
+            <TextShimmer className="font-sans text-4xl md:text-5xl font-semibold mb-6 text-foreground tracking-tight">Invista na sua evolução.</TextShimmer>
             <p className="text-muted-foreground text-lg max-w-xl mx-auto mb-8">Domine sua rotina por menos de um café por mês. Comece de graça e evolua no seu ritmo.</p>
             
             <div className="flex items-center justify-center gap-2 bg-secondary p-1.5 rounded-full border border-border shadow-sm inline-flex mx-auto">
@@ -339,11 +365,11 @@ export default function LandingPage() {
           transition={{ duration: 0.8 }}
           className="max-w-3xl mx-auto text-center"
         >
-          <h2 className="font-sans text-5xl font-semibold mb-8 text-foreground tracking-tight">Recupere o controle.</h2>
+          <TextShimmer className="font-sans text-5xl font-semibold mb-8 text-foreground tracking-tight">Recupere o controle.</TextShimmer>
           <p className="text-muted-foreground text-xl mb-12">Crie sua primeira rotina realista em menos de 2 minutos.</p>
-          <Link to="/onboarding" className={cn(buttonVariants({ size: "xl", shape: "pill", className: "px-10 py-5 text-lg" }))}>
-            Começar Gratuitamente
-          </Link>
+          <ShineButton className={cn(buttonVariants({ size: "xl", shape: "pill", className: "px-10 py-5 text-lg" }))}>
+            <Link to="/onboarding">Começar Gratuitamente</Link>
+          </ShineButton>
         </motion.div>
       </section>
       

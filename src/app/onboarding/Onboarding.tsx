@@ -93,12 +93,16 @@ export default function Onboarding() {
       try {
         const { error } = await supabase
           .from("profiles")
-          .update({
+          .upsert({
+            id: currentUser.id,
+            name: currentUser.displayName || currentUser.email?.split('@')[0] || "Usuário",
+            email: currentUser.email || "",
             goal: goal,
             energy: energy,
-            routine_details: routineDetails
-          })
-          .eq("id", currentUser.id);
+            routine_details: routineDetails,
+            plan: "free",
+            updated_at: new Date().toISOString()
+          });
 
         if (error) throw error;
         toast.success("Perfil configurado com sucesso!");
@@ -106,8 +110,6 @@ export default function Onboarding() {
       } catch (err) {
         toast.error("Erro ao salvar as preferências.");
       }
-    } else {
-      navigate("/register", { state: { goal, energy, routineDetails } });
     }
   };
 
