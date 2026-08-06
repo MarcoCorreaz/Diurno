@@ -127,7 +127,7 @@
     @apply border-border selection:bg-primary/20 selection:text-foreground;
   }
   body {
-    @apply bg-background text-foreground font-sans antialiased overflow-x-hidden;
+    @apply bg-background text-foreground font-sans antialiased overflow-x-clip;
   }
 }
 

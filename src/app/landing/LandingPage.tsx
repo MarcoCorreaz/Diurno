@@ -33,7 +33,7 @@ export default function LandingPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background text-foreground selection:bg-foreground selection:text-background overflow-x-hidden font-sans relative">
+    <div className="min-h-screen bg-background text-foreground selection:bg-foreground selection:text-background overflow-x-clip font-sans relative">
       
       {/* Absolute container that spans the full page height, with a sticky child to simulate a fixed background without pushing content down or being broken by Framer Motion. */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden z-0">

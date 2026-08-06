@@ -29,6 +29,7 @@ export function ScrollExperienceSection() {
       scrollTrigger: {
         trigger: triggerRef.current,
         pin: true,
+        pinType: "transform",
         start: "top top",
         end: "+=250%",
         scrub: 1,
@@ -69,6 +70,7 @@ export function ScrollExperienceSection() {
     // Recalcular ScrollTrigger em redimensionamentos para evitar quebra em telas móveis/desktop
     const handleResize = () => ScrollTrigger.refresh();
     window.addEventListener("resize", handleResize);
+    document.fonts.ready.then(() => ScrollTrigger.refresh());
     return () => window.removeEventListener("resize", handleResize);
   }, { scope: sectionRef });
 
