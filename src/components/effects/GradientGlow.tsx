@@ -14,9 +14,10 @@ export function GradientGlow({ className }: { className?: string }) {
       )}
       aria-hidden="true"
     >
-      <div className="animate-glow-pulse absolute left-1/2 top-[60%]"
+      <div className="absolute left-1/2 top-1/2"
         style={{
-          transform: "translate(-50%, -50%)",
+          transform: "translate3d(-50%, -50%, 0)",
+          willChange: "transform",
           width: "140vw",
           height: "160vh",
           background: [

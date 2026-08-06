@@ -33,8 +33,15 @@ export default function LandingPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background text-foreground selection:bg-foreground selection:text-background overflow-x-hidden font-sans">
+    <div className="min-h-screen bg-background text-foreground selection:bg-foreground selection:text-background overflow-x-hidden font-sans relative">
       
+      {/* Absolute container that spans the full page height, with a sticky child to simulate a fixed background without pushing content down or being broken by Framer Motion. */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden z-0">
+        <div className="sticky top-0 w-full h-screen flex items-center justify-center">
+          <GradientGlow />
+        </div>
+      </div>
+
       {/* Floating Navbar — scroll-aware header inspired by 21st.dev */}
       <motion.header 
         initial={{ opacity: 0, y: -10 }}
@@ -56,10 +63,10 @@ export default function LandingPage() {
         </div>
       </motion.header>
 
-      {/* Hero — with GradientGlow, TextRotate & ShineButton */}
-      <section className="relative pt-32 pb-20 px-6 max-w-6xl mx-auto flex flex-col lg:flex-row items-center lg:items-start gap-16 min-h-[90vh]">
-        <GradientGlow />
-        <div className="flex-1 lg:pt-16 relative z-10">
+      {/* Hero — with TextRotate & ShineButton */}
+      <section className="relative w-full overflow-hidden flex items-center min-h-[90vh] pt-32 pb-20">
+        <div className="relative z-10 w-full px-6 max-w-6xl mx-auto flex flex-col lg:flex-row items-center lg:items-start gap-16">
+          <div className="flex-1 lg:pt-16">
           <AnimatedTitle 
             text={["Seu dia,"]} 
             className="font-sans text-5xl md:text-7xl font-semibold leading-[1.05] tracking-tight mb-2 text-foreground" 
@@ -151,6 +158,7 @@ export default function LandingPage() {
             </div>
           </div>
         </motion.div>
+        </div>
       </section>
 
       {/* Interactive GSAP Scroll Experience Section */}
