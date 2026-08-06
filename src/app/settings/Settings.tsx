@@ -8,11 +8,20 @@ import { toast } from "sonner";
 import Sidebar from "@/components/layout/Sidebar";
 import { useTheme } from "next-themes";
 import { useNotifications } from "@/hooks/use-notifications";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/lib/supabase";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 
 export default function Settings() {
   useLenis();
   const location = useLocation();
   const { permission, requestPermission } = useNotifications();
+  const { currentUser } = useAuth();
+  
+  const [profileName, setProfileName] = useState("");
+  const [profileEmail, setProfileEmail] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
 
   // Settings State
   const [notifications, setNotifications] = useState({
@@ -25,6 +34,40 @@ export default function Settings() {
   useEffect(() => {
     setNotifications(prev => ({ ...prev, push: permission === 'granted' }));
   }, [permission]);
+
+  useEffect(() => {
+    if (currentUser) {
+      const fetchProfile = async () => {
+        const { data } = await supabase.from('profiles').select('name, email, preferences').eq('id', currentUser.id).single();
+        if (data) {
+          setProfileName(data.name || currentUser.displayName || "");
+          setProfileEmail(data.email || currentUser.email || "");
+          if (data.preferences) {
+             setNotifications({
+               push: permission === 'granted',
+               email: data.preferences.email_notifications || false,
+               smartInsights: data.preferences.smart_insights ?? true,
+             });
+          }
+        }
+      };
+      fetchProfile();
+    }
+  }, [currentUser, permission]);
+
+  const handleSaveProfile = async () => {
+    if (!currentUser) return;
+    setIsSaving(true);
+    try {
+      const { error } = await supabase.from('profiles').update({ name: profileName }).eq('id', currentUser.id);
+      if (error) throw error;
+      toast.success("Perfil atualizado com sucesso!");
+    } catch (err: any) {
+      toast.error("Erro ao atualizar perfil", { description: err.message });
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   const { theme, setTheme } = useTheme();
   
@@ -73,6 +116,35 @@ export default function Settings() {
         </header>
 
         <div className="max-w-3xl mx-auto w-full space-y-8 md:space-y-10">
+
+          {/* Section: Meu Perfil */}
+          <section>
+            <h2 className="font-sans text-xl font-medium tracking-tight text-foreground mb-4">Meu Perfil</h2>
+            <div className="bg-card border border-border rounded-3xl p-5 md:p-6 shadow-sm flex flex-col gap-4">
+              <div className="flex flex-col gap-2">
+                <label className="text-sm font-medium text-foreground">Nome</label>
+                <Input 
+                  value={profileName} 
+                  onChange={(e) => setProfileName(e.target.value)} 
+                  placeholder="Seu nome"
+                  className="bg-background"
+                />
+              </div>
+              <div className="flex flex-col gap-2">
+                <label className="text-sm font-medium text-muted-foreground">E-mail (Leitura apenas)</label>
+                <Input 
+                  value={profileEmail} 
+                  disabled
+                  className="bg-secondary/50 text-muted-foreground"
+                />
+              </div>
+              <div className="flex justify-end mt-2">
+                <Button onClick={handleSaveProfile} disabled={isSaving} shape="pill">
+                  {isSaving ? "Salvando..." : "Salvar Alterações"}
+                </Button>
+              </div>
+            </div>
+          </section>
           
           {/* Section: Notifications */}
           <section>

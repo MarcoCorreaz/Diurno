@@ -127,6 +127,9 @@ export default function Dashboard() {
       const cleanJson = data.text.replace(/```json/g, "").replace(/```/g, "").trim();
       const parsed = JSON.parse(cleanJson);
       
+      const daysMap = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sab'];
+      const todayId = daysMap[new Date().getDay()];
+
       if (Array.isArray(parsed) && parsed.length >= 3) {
         smartTasks = parsed.slice(0, 3).map((item: any) => ({
           id: crypto.randomUUID(),
@@ -138,6 +141,7 @@ export default function Dashboard() {
           currentStreak: 0,
           maxStreak: 0,
           totalCompletions: 0,
+          dayOfWeek: todayId,
         }));
       } else {
         throw new Error("A IA retornou um formato inválido.");
@@ -151,6 +155,7 @@ export default function Dashboard() {
           category: t.category,
           completed: t.completed,
           user_id: currentUser.id,
+          day_of_week: t.dayOfWeek,
           current_streak: 0,
           max_streak: 0,
           total_completions: 0,
@@ -209,12 +214,15 @@ export default function Dashboard() {
   const handleSaveTask = async (newTask: Task) => {
     if (!currentUser) return;
     try {
+      const daysMap = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sab'];
+      const todayId = daysMap[new Date().getDay()];
+
       const taskData = {
         id: newTask.id,
         title: newTask.title,
         time: newTask.time,
         category: newTask.category,
-        day_of_week: newTask.dayOfWeek,
+        day_of_week: newTask.dayOfWeek || todayId,
         completed: newTask.completed,
         user_id: currentUser.id,
         current_streak: newTask.currentStreak || 0,

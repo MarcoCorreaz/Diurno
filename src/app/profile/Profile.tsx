@@ -26,6 +26,7 @@ export default function Profile() {
     plan: "Free",
     memberSince: "Carregando..."
   });
+  const [isUploading, setIsUploading] = useState(false);
 
   const [statsData, setStatsData] = useState({ streak: 0, completions: 0 });
 
@@ -49,6 +50,7 @@ export default function Profile() {
             ...prev,
             name: data.name || prev.name,
             email: data.email || prev.email,
+            avatar: data.avatar_url || prev.avatar,
             plan: data.plan || "Free",
             memberSince: memberSinceStr
           }));
@@ -89,10 +91,54 @@ export default function Profile() {
     { label: "Conquistas", value: "Em breve", icon: Trophy, color: "text-[#EAB308]" },
   ];
 
-  const handleAvatarChange = () => {
-    toast("Em breve", {
-      description: "A alteração de foto de perfil será disponibilizada em uma atualização futura."
-    });
+  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !currentUser) return;
+
+    // Validate file type and size
+    if (!file.type.startsWith("image/")) {
+      toast.error("Por favor, selecione uma imagem.");
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("A imagem deve ter no máximo 5MB.");
+      return;
+    }
+
+    try {
+      setIsUploading(true);
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${currentUser.id}-${Math.random()}.${fileExt}`;
+      const filePath = `${fileName}`;
+
+      // Upload to Supabase Storage
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(filePath, file, { upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      // Get Public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(filePath);
+
+      // Update Profile Table
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({ avatar_url: publicUrl })
+        .eq('id', currentUser.id);
+
+      if (updateError) throw updateError;
+
+      setUserProfile(prev => ({ ...prev, avatar: publicUrl }));
+      toast.success("Foto de perfil atualizada!");
+    } catch (error: any) {
+      console.error(error);
+      toast.error("Erro ao atualizar foto", { description: error.message });
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   const handleLogout = async () => {
@@ -155,16 +201,29 @@ export default function Profile() {
             )}
 
             <div className="relative group shrink-0">
-              <div className="w-24 h-24 md:w-32 md:h-32 rounded-full border border-border overflow-hidden bg-secondary">
+              <div className="w-24 h-24 md:w-32 md:h-32 rounded-full border border-border overflow-hidden bg-secondary relative">
                 <img src={userProfile.avatar} alt={userProfile.name} className="w-full h-full object-cover" />
+                {isUploading && (
+                  <div className="absolute inset-0 bg-background/50 backdrop-blur-sm flex items-center justify-center">
+                    <span className="w-6 h-6 border-2 border-foreground border-t-transparent rounded-full animate-spin" />
+                  </div>
+                )}
               </div>
-              <button
-                onClick={handleAvatarChange}
-                className="absolute bottom-0 right-0 w-8 h-8 md:w-10 md:h-10 bg-background border border-border rounded-full flex items-center justify-center shadow-sm text-foreground hover:bg-secondary transition-colors"
+              <label
+                htmlFor="avatar-upload"
+                className="absolute bottom-0 right-0 w-8 h-8 md:w-10 md:h-10 bg-background border border-border rounded-full flex items-center justify-center shadow-sm text-foreground hover:bg-secondary transition-colors cursor-pointer"
                 aria-label="Alterar foto de perfil"
               >
                 <Camera className="w-4 h-4" />
-              </button>
+                <input
+                  id="avatar-upload"
+                  type="file"
+                  accept="image/*"
+                  onChange={handleAvatarChange}
+                  disabled={isUploading}
+                  className="hidden"
+                />
+              </label>
             </div>
 
             <div className="flex-1 text-center md:text-left flex flex-col items-center md:items-start justify-center pt-2">
