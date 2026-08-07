@@ -1,334 +1,240 @@
-import React, { useState, useEffect } from "react";
-import { Task } from "@/lib/types";
-import { supabase } from "@/lib/supabase";
-import { useAuth } from "@/contexts/AuthContext";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import Sidebar from "@/components/layout/Sidebar";
-import { Target, Trophy, CreditCard, LogOut, Camera, Crown, Flame, Lock } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { Link } from "react-router-dom";
+import { Camera, CreditCard, Crown, Flame, Lock, LogOut, Target } from "lucide-react";
 import { toast } from "sonner";
-import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip } from "recharts";
+import Sidebar from "@/components/layout/Sidebar";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/lib/supabase";
+import { cn } from "@/lib/utils";
+
+interface ProfileState {
+  name: string;
+  email: string;
+  avatar: string;
+  plan: string;
+  memberSince: string;
+  billingStatus: string;
+  billingCycle: string;
+  hasRecurringSubscription: boolean;
+}
 
 export default function Profile() {
   const { currentUser } = useAuth();
   const navigate = useNavigate();
-  const [userProfile, setUserProfile] = useState<{
-    name: string;
-    email: string;
-    avatar: string;
-    plan: string;
-    memberSince: string;
-    stripeCustomerId: string;
-  }>({
+  const [isUploading, setIsUploading] = useState(false);
+  const [isManaging, setIsManaging] = useState(false);
+  const [statsData, setStatsData] = useState({ streak: 0, completions: 0 });
+  const [userProfile, setUserProfile] = useState<ProfileState>({
     name: currentUser?.displayName || "Usuário",
     email: currentUser?.email || "",
     avatar: currentUser?.photoURL || "https://github.com/shadcn.png",
-    plan: "Free",
-    memberSince: "Carregando...",
-    stripeCustomerId: ""
+    plan: "free",
+    memberSince: "Recente",
+    billingStatus: "inactive",
+    billingCycle: "",
+    hasRecurringSubscription: false,
   });
-  const [isUploading, setIsUploading] = useState(false);
-
-  const [statsData, setStatsData] = useState({ streak: 0, completions: 0 });
 
   useEffect(() => {
-    if (currentUser) {
-      let memberSinceStr = "Recente";
-      if (currentUser.raw?.created_at) {
-        const d = new Date(currentUser.raw.created_at);
-        memberSinceStr = d.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+    if (!currentUser) return;
+
+    const memberSince = currentUser.raw?.created_at
+      ? new Date(currentUser.raw.created_at).toLocaleDateString("pt-BR", { month: "long", year: "numeric" })
+      : "Recente";
+
+    const loadProfile = async () => {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("name, email, avatar_url, plan, billing_status, billing_cycle, asaas_subscription_id")
+        .eq("id", currentUser.id)
+        .single();
+
+      if (error) {
+        toast.error("Não foi possível carregar os dados de cobrança.");
+        return;
       }
 
-      const fetchProfile = async () => {
-        const { data } = await supabase
-          .from("profiles")
-          .select("*")
-          .eq("id", currentUser.id)
-          .single();
+      setUserProfile({
+        name: data.name || currentUser.displayName || "Usuário",
+        email: data.email || currentUser.email || "",
+        avatar: data.avatar_url || currentUser.photoURL || "https://github.com/shadcn.png",
+        plan: data.plan || "free",
+        memberSince,
+        billingStatus: data.billing_status || "inactive",
+        billingCycle: data.billing_cycle || "",
+        hasRecurringSubscription: Boolean(data.asaas_subscription_id),
+      });
+    };
 
-        if (data) {
-          setUserProfile(prev => ({
-            ...prev,
-            name: data.name || prev.name,
-            email: data.email || prev.email,
-            avatar: data.avatar_url || prev.avatar,
-            plan: data.plan || "Free",
-            memberSince: memberSinceStr,
-            stripeCustomerId: data.stripe_customer_id || ""
-          }));
-        } else {
-          setUserProfile(prev => ({
-            ...prev,
-            plan: "Free",
-            memberSince: memberSinceStr,
-            stripeCustomerId: ""
-          }));
-        }
-      };
-      fetchProfile();
+    const loadStats = async () => {
+      const { data } = await supabase
+        .from("tasks")
+        .select("current_streak, total_completions")
+        .eq("user_id", currentUser.id);
 
-      // Busca as tasks para somar os stats
-      const fetchStats = async () => {
-        const { data } = await supabase
-          .from("tasks")
-          .select("current_streak, total_completions")
-          .eq("user_id", currentUser.id);
+      const totals = (data || []).reduce(
+        (acc, task: any) => ({
+          streak: acc.streak + (task.current_streak || 0),
+          completions: acc.completions + (task.total_completions || 0),
+        }),
+        { streak: 0, completions: 0 },
+      );
+      setStatsData(totals);
+    };
 
-        let totalStreak = 0;
-        let totalComps = 0;
-        if (data) {
-          data.forEach((t: any) => {
-            totalStreak += (t.current_streak || 0);
-            totalComps += (t.total_completions || 0);
-          });
-        }
-        setStatsData({ streak: totalStreak, completions: totalComps });
-      };
-      fetchStats();
-    }
+    void loadProfile();
+    void loadStats();
   }, [currentUser]);
 
-  const stats = [
-    { label: "Sequência", value: `${statsData.streak} dias`, icon: Flame, color: "text-[#FF4500]" },
-    { label: "Concluídas", value: `${statsData.completions}`, icon: Target, color: "text-foreground" },
-    { label: "Conquistas", value: "Em breve", icon: Lock, color: "text-muted-foreground opacity-50" },
-  ];
-
-  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
+  const handleAvatarChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
     if (!file || !currentUser) return;
-
-    // Validate file type and size
-    if (!file.type.startsWith("image/")) {
-      toast.error("Por favor, selecione uma imagem.");
-      return;
-    }
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error("A imagem deve ter no máximo 5MB.");
+    if (!file.type.startsWith("image/") || file.size > 5 * 1024 * 1024) {
+      toast.error("Use uma imagem de até 5 MB.");
       return;
     }
 
     try {
       setIsUploading(true);
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${currentUser.id}-${Math.random()}.${fileExt}`;
-      const filePath = `${fileName}`;
-
-      // Upload to Supabase Storage
-      const { error: uploadError } = await supabase.storage
-        .from('avatars')
-        .upload(filePath, file, { upsert: true });
-
+      const extension = file.name.split(".").pop() || "jpg";
+      const path = `${currentUser.id}-${crypto.randomUUID()}.${extension}`;
+      const { error: uploadError } = await supabase.storage.from("avatars").upload(path, file);
       if (uploadError) throw uploadError;
 
-      // Get Public URL
-      const { data: { publicUrl } } = supabase.storage
-        .from('avatars')
-        .getPublicUrl(filePath);
-
-      // Update Profile Table
+      const { data: { publicUrl } } = supabase.storage.from("avatars").getPublicUrl(path);
       const { error: updateError } = await supabase
-        .from('profiles')
+        .from("profiles")
         .update({ avatar_url: publicUrl })
-        .eq('id', currentUser.id);
-
+        .eq("id", currentUser.id);
       if (updateError) throw updateError;
 
-      setUserProfile(prev => ({ ...prev, avatar: publicUrl }));
-      toast.success("Foto de perfil atualizada!");
+      setUserProfile((current) => ({ ...current, avatar: publicUrl }));
+      toast.success("Foto de perfil atualizada.");
     } catch (error: any) {
-      console.error(error);
-      toast.error("Erro ao atualizar foto", { description: error.message });
+      toast.error("Erro ao atualizar foto", { description: error?.message });
     } finally {
       setIsUploading(false);
     }
   };
 
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
-    toast("Sessão encerrada");
-    navigate("/login");
-  };
-
   const handleManageSubscription = async () => {
-    if (userProfile.plan === "Free" || userProfile.plan === "Básico") {
+    if (userProfile.plan.toLowerCase() === "free" || userProfile.plan.toLowerCase() === "básico") {
       navigate("/planos");
       return;
     }
-    
-    if (!userProfile.stripeCustomerId) {
-      toast.error("Você ainda não possui faturas ativas no Stripe.");
+
+    if (!userProfile.hasRecurringSubscription) {
+      toast.info("Seu plano não possui cobrança recorrente para cancelar.");
       return;
     }
-    
+
+    const confirmed = window.confirm("Deseja cancelar a renovação da sua assinatura Asaas?");
+    if (!confirmed) return;
+
     try {
-      const res = await fetch("/api/portal", {
+      setIsManaging(true);
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) throw new Error("Sessão expirada.");
+
+      const response = await fetch("/api/portal", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ customerId: userProfile.stripeCustomerId }) 
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({ action: "cancel" }),
       });
-      const data = await res.json();
-      if (res.ok && data.url) {
-        window.location.href = data.url;
-      } else {
-        toast.error(data.error || "Erro ao acessar o portal do cliente.");
-      }
-    } catch (err) {
-      toast.error("Erro ao acessar o portal do cliente.");
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.error || "Não foi possível cancelar a assinatura.");
+
+      setUserProfile((current) => ({
+        ...current,
+        plan: "free",
+        billingStatus: "canceled",
+        hasRecurringSubscription: false,
+      }));
+      toast.success("Assinatura cancelada com sucesso.");
+    } catch (error: any) {
+      toast.error("Erro ao gerenciar assinatura", { description: error?.message });
+    } finally {
+      setIsManaging(false);
     }
   };
 
-  const weeklyChartData = [
-    { day: "Seg", progresso: Math.min(100, Math.max(40, (statsData.completions * 12) % 100 || 60)) },
-    { day: "Ter", progresso: Math.min(100, Math.max(50, (statsData.completions * 22) % 100 || 75)) },
-    { day: "Qua", progresso: Math.min(100, Math.max(60, (statsData.completions * 32) % 100 || 85)) },
-    { day: "Qui", progresso: Math.min(100, Math.max(45, (statsData.completions * 42) % 100 || 70)) },
-    { day: "Sex", progresso: Math.min(100, Math.max(65, (statsData.completions * 52) % 100 || 90)) },
-    { day: "Sáb", progresso: Math.min(100, Math.max(50, (statsData.completions * 62) % 100 || 80)) },
-    { day: "Dom", progresso: Math.min(100, Math.max(70, (statsData.completions * 72) % 100 || 95)) },
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    navigate("/login");
+  };
+
+  const normalizedPlan = userProfile.plan.toLowerCase();
+  const isPremium = normalizedPlan === "pro" || normalizedPlan === "vitalício" || normalizedPlan === "lifetime";
+  const stats = [
+    { label: "Sequência", value: `${statsData.streak} dias`, icon: Flame, color: "text-orange-500" },
+    { label: "Concluídas", value: `${statsData.completions}`, icon: Target, color: "text-foreground" },
+    { label: "Conquistas", value: "Em breve", icon: Lock, color: "text-muted-foreground" },
   ];
 
   return (
-    <div className="flex flex-col md:flex-row h-[100dvh] w-full bg-background text-foreground font-sans overflow-hidden relative selection:bg-foreground selection:text-background">
+    <div className="flex h-[100dvh] w-full flex-col overflow-hidden bg-background text-foreground md:flex-row">
       <Sidebar />
-      <main className="flex-1 p-6 md:p-10 flex flex-col overflow-y-auto relative z-10 pb-24 md:pb-10">
-        <header className="mb-8 md:mb-12 max-w-3xl mx-auto w-full">
-          <p className="text-muted-foreground text-xs md:text-sm uppercase tracking-[0.2em] mb-2 font-medium">Conta</p>
-          <h1 className="font-sans text-3xl md:text-4xl font-semibold tracking-tight text-foreground">
-            Seu Perfil
-          </h1>
-        </header>
+      <main className="flex-1 overflow-y-auto p-6 pb-24 md:p-10">
+        <div className="mx-auto flex w-full max-w-3xl flex-col gap-8">
+          <header>
+            <p className="mb-2 text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground">Conta</p>
+            <h1 className="text-3xl font-semibold tracking-tight md:text-4xl">Seu Perfil</h1>
+          </header>
 
-        <div className="max-w-3xl mx-auto w-full flex flex-col gap-8">
-
-          {/* Avatar and Basic Info */}
-          <section className="bg-card border border-border rounded-3xl p-6 md:p-8 flex flex-col md:flex-row items-center md:items-start gap-6 shadow-sm relative overflow-hidden">
-            {/* Decorative Background for Pro */}
-            {userProfile.plan === "Pro" && (
-              <div className="absolute top-0 right-0 p-8 opacity-5 pointer-events-none -translate-y-8 translate-x-8">
-                <Crown className="w-48 h-48 text-foreground" />
+          <section className="relative flex flex-col items-center gap-6 overflow-hidden rounded-3xl border border-border bg-card p-6 shadow-sm md:flex-row md:items-start md:p-8">
+            {isPremium && <Crown className="absolute right-6 top-6 h-8 w-8 text-amber-500" />}
+            <div className="relative shrink-0">
+              <div className="h-28 w-28 overflow-hidden rounded-full border border-border bg-secondary">
+                <img src={userProfile.avatar} alt={userProfile.name} className="h-full w-full object-cover" />
               </div>
-            )}
-
-            <div className="relative group shrink-0">
-              <div className="w-24 h-24 md:w-32 md:h-32 rounded-full border border-border overflow-hidden bg-secondary relative">
-                <img src={userProfile.avatar} alt={userProfile.name} className="w-full h-full object-cover" />
-                {isUploading && (
-                  <div className="absolute inset-0 bg-background/50 backdrop-blur-sm flex items-center justify-center">
-                    <span className="w-6 h-6 border-2 border-foreground border-t-transparent rounded-full animate-spin" />
-                  </div>
-                )}
-              </div>
-              <label
-                htmlFor="avatar-upload"
-                className="absolute bottom-0 right-0 w-8 h-8 md:w-10 md:h-10 bg-background border border-border rounded-full flex items-center justify-center shadow-sm text-foreground hover:bg-secondary transition-colors cursor-pointer"
-                aria-label="Alterar foto de perfil"
-              >
-                <Camera className="w-4 h-4" />
-                <input
-                  id="avatar-upload"
-                  type="file"
-                  accept="image/*"
-                  onChange={handleAvatarChange}
-                  disabled={isUploading}
-                  className="hidden"
-                />
+              <label htmlFor="avatar-upload" className="absolute bottom-0 right-0 flex h-10 w-10 cursor-pointer items-center justify-center rounded-full border border-border bg-background shadow-sm" aria-label="Alterar foto de perfil">
+                <Camera className="h-4 w-4" />
+                <input id="avatar-upload" type="file" accept="image/*" onChange={handleAvatarChange} disabled={isUploading} className="hidden" />
               </label>
             </div>
-
-            <div className="flex-1 text-center md:text-left flex flex-col items-center md:items-start justify-center pt-2">
-              <div className="flex items-center gap-3 mb-1">
-                <h2 className="font-sans text-2xl font-semibold tracking-tight text-foreground">{userProfile.name}</h2>
-                {userProfile.plan === "Pro" && (
-                  <span className="bg-foreground text-background text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full shadow-sm flex items-center gap-1">
-                    <Crown className="w-3 h-3" /> Pro
-                  </span>
-                )}
-              </div>
-              <p className="text-muted-foreground mb-4">{userProfile.email}</p>
-              <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium">Membro desde {userProfile.memberSince}</p>
+            <div className="text-center md:text-left">
+              <h2 className="text-2xl font-semibold">{userProfile.name}</h2>
+              <p className="text-muted-foreground">{userProfile.email}</p>
+              <p className="mt-4 text-xs uppercase tracking-wider text-muted-foreground">Membro desde {userProfile.memberSince}</p>
             </div>
           </section>
 
-          {/* Stats */}
-          <section className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            {stats.map((stat, i) => (
-              <div key={i} className="bg-card border border-border rounded-3xl p-5 shadow-sm flex items-center gap-4">
-                <div className="w-12 h-12 rounded-full bg-secondary border border-border flex items-center justify-center shrink-0 shadow-sm">
-                  <stat.icon className={cn("w-6 h-6", stat.color)} />
+          <section className="grid gap-4 sm:grid-cols-3">
+            {stats.map((stat) => (
+              <div key={stat.label} className="flex items-center gap-4 rounded-3xl border border-border bg-card p-5 shadow-sm">
+                <div className="flex h-12 w-12 items-center justify-center rounded-full border border-border bg-secondary">
+                  <stat.icon className={cn("h-6 w-6", stat.color)} />
                 </div>
                 <div>
-                  <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1 font-medium">{stat.label}</p>
-                  <p className="font-mono text-xl font-semibold text-foreground">{stat.value}</p>
+                  <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">{stat.label}</p>
+                  <p className="font-mono text-xl font-semibold">{stat.value}</p>
                 </div>
               </div>
             ))}
           </section>
 
-          {/* Consistency Chart */}
-          <section className="bg-card border border-border rounded-3xl p-6 md:p-8 shadow-sm">
-            <div className="flex items-center justify-between mb-6">
-              <div>
-                <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium mb-1">Métricas de Consistência</p>
-                <h3 className="font-sans text-xl font-semibold tracking-tight text-foreground">Desempenho da Semana (%)</h3>
-              </div>
-              <span className="text-xs bg-secondary px-3 py-1 rounded-full border border-border text-muted-foreground font-mono">
-                Últimos 7 dias
-              </span>
-            </div>
-            <div className="h-56 w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={weeklyChartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                  <defs>
-                    <linearGradient id="colorProgresso" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#10B981" stopOpacity={0.35} />
-                      <stop offset="95%" stopColor="#10B981" stopOpacity={0.0} />
-                    </linearGradient>
-                  </defs>
-                  <XAxis dataKey="day" stroke="#71717A" fontSize={12} tickLine={false} axisLine={false} />
-                  <YAxis stroke="#71717A" fontSize={12} tickLine={false} axisLine={false} domain={[0, 100]} />
-                  <Tooltip
-                    contentStyle={{ backgroundColor: "#1C1C1A", borderColor: "#27272A", borderRadius: "12px", color: "#F9F9F6" }}
-                    labelStyle={{ color: "#A1A1AA" }}
-                    formatter={(value) => [`${value}%`, "Conclusão"]}
-                  />
-                  <Area type="monotone" dataKey="progresso" stroke="#10B981" strokeWidth={3} fillOpacity={1} fill="url(#colorProgresso)" />
-                </AreaChart>
-              </ResponsiveContainer>
-            </div>
-          </section>
-
-          {/* Subscription and Settings */}
-          <section className="bg-card border border-border rounded-3xl overflow-hidden shadow-sm">
-            <button onClick={handleManageSubscription} className="w-full text-left p-5 flex items-center justify-between border-b border-border hover:bg-secondary/50 transition-colors group">
+          <section className="overflow-hidden rounded-3xl border border-border bg-card shadow-sm">
+            <button onClick={handleManageSubscription} disabled={isManaging} className="flex w-full items-center justify-between border-b border-border p-5 text-left transition-colors hover:bg-secondary/50 disabled:opacity-60">
               <div className="flex items-center gap-4">
-                <div className="w-10 h-10 rounded-xl bg-background border border-border shadow-sm flex items-center justify-center text-foreground group-hover:bg-foreground group-hover:text-background transition-colors">
-                  <CreditCard className="w-5 h-5" />
-                </div>
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-border bg-background"><CreditCard className="h-5 w-5" /></div>
                 <div>
-                  <h3 className="font-medium text-foreground">Assinatura</h3>
-                  <p className="text-sm text-muted-foreground">Gerencie seu plano atual.</p>
+                  <h3 className="font-medium">Cobrança Asaas</h3>
+                  <p className="text-sm text-muted-foreground">
+                    {userProfile.hasRecurringSubscription ? "Gerencie ou cancele sua renovação." : "Consulte ou escolha um plano."}
+                  </p>
                 </div>
               </div>
-              <div className="flex items-center gap-3">
-                <span className="text-sm font-medium text-foreground">{userProfile.plan}</span>
-                <div className="w-8 h-8 rounded-full border border-border flex items-center justify-center text-muted-foreground bg-background shadow-sm">
-                  &rarr;
-                </div>
+              <div className="text-right">
+                <p className="text-sm font-medium">{userProfile.plan}</p>
+                <p className="text-xs text-muted-foreground">{userProfile.billingStatus}{userProfile.billingCycle ? ` · ${userProfile.billingCycle}` : ""}</p>
               </div>
             </button>
-
-            <button onClick={handleLogout} className="w-full p-5 flex items-center justify-between hover:bg-red-500/5 transition-colors text-red-500 group">
-              <div className="flex items-center gap-4">
-                <div className="w-10 h-10 rounded-xl bg-background border border-border shadow-sm flex items-center justify-center text-red-500 group-hover:bg-red-500 group-hover:text-white transition-colors group-hover:border-red-500">
-                  <LogOut className="w-5 h-5" />
-                </div>
-                <div className="text-left">
-                  <h3 className="font-medium">Sair da conta</h3>
-                  <p className="text-sm opacity-80">Encerrar sessão neste dispositivo.</p>
-                </div>
-              </div>
+            <button onClick={handleLogout} className="flex w-full items-center gap-4 p-5 text-left text-red-500 transition-colors hover:bg-red-500/5">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-border bg-background"><LogOut className="h-5 w-5" /></div>
+              <div><h3 className="font-medium">Sair da conta</h3><p className="text-sm opacity-80">Encerrar sessão neste dispositivo.</p></div>
             </button>
           </section>
         </div>
