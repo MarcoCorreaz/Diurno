@@ -1,34 +1,24 @@
-import Stripe from "stripe";
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { createClient } from "@supabase/supabase-js";
 
-// Vercel config to disable body parsing so we can read the raw body for Stripe signature verification
-export const config = {
-  api: {
-    bodyParser: false,
-  },
+type AsaasCheckoutEvent = {
+  id?: string;
+  event?: "CHECKOUT_CREATED" | "CHECKOUT_PAID" | "CHECKOUT_CANCELED" | "CHECKOUT_EXPIRED" | string;
+  checkout?: {
+    id?: string;
+    status?: string;
+    customer?: string | null;
+    subscription?: { id?: string } | null;
+  };
 };
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string, {
-  apiVersion: "2024-06-20" as any,
-});
-
-const supabaseUrl = process.env.VITE_SUPABASE_URL as string;
-const supabaseServiceRole = process.env.SUPABASE_SERVICE_ROLE_KEY as string;
-
-if (!supabaseServiceRole) {
-  console.warn("WARNING: SUPABASE_SERVICE_ROLE_KEY is not set. Webhooks will fail RLS.");
-}
-
-const supabase = createClient(supabaseUrl, supabaseServiceRole || process.env.VITE_SUPABASE_ANON_KEY as string);
-
-// Helper to get raw body
-async function getRawBody(req: VercelRequest): Promise<string> {
-  let body = "";
-  for await (const chunk of req) {
-    body += chunk;
+function timingSafeEqualText(left: string, right: string): boolean {
+  if (left.length !== right.length) return false;
+  let result = 0;
+  for (let i = 0; i < left.length; i += 1) {
+    result |= left.charCodeAt(i) ^ right.charCodeAt(i);
   }
-  return body;
+  return result === 0;
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -36,75 +26,100 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(405).json({ error: "Method not allowed. Use POST." });
   }
 
-  const sig = req.headers["stripe-signature"] as string;
-  const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET as string;
+  const expectedToken = process.env.ASAAS_WEBHOOK_TOKEN;
+  const receivedHeader = req.headers["asaas-access-token"];
+  const receivedToken = Array.isArray(receivedHeader) ? receivedHeader[0] : receivedHeader;
 
-  let event: Stripe.Event;
-
-  try {
-    const rawBody = await getRawBody(req);
-    if (endpointSecret) {
-      event = stripe.webhooks.constructEvent(
-        rawBody,
-        sig,
-        endpointSecret
-      );
-    } else {
-      // Fallback if no secret is provided (not recommended for production)
-      event = JSON.parse(rawBody);
-    }
-  } catch (err: any) {
-    console.error("Webhook Signature Error:", err.message);
-    return res.status(400).send(`Webhook Error: ${err.message}`);
+  if (!expectedToken || !receivedToken || !timingSafeEqualText(receivedToken, expectedToken)) {
+    return res.status(401).json({ error: "Webhook não autorizado." });
   }
 
+  const supabaseUrl = process.env.VITE_SUPABASE_URL;
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!supabaseUrl || !serviceRoleKey) {
+    return res.status(500).json({ error: "Configuração do webhook incompleta." });
+  }
+
+  const event = req.body as AsaasCheckoutEvent;
+  const eventId = event?.id;
+  const eventType = event?.event;
+  const checkoutId = event?.checkout?.id;
+
+  if (!eventId || !eventType || !checkoutId) {
+    return res.status(400).json({ error: "Payload de webhook inválido." });
+  }
+
+  const admin = createClient(supabaseUrl, serviceRoleKey);
+
+  const { error: eventInsertError } = await admin.from("billing_webhook_events").insert({
+    event_id: eventId,
+    event_type: eventType,
+    checkout_id: checkoutId,
+  });
+
+  if (eventInsertError?.code === "23505") {
+    return res.status(200).json({ received: true, duplicate: true });
+  }
+  if (eventInsertError) {
+    console.error("Erro ao registrar webhook Asaas:", eventInsertError);
+    return res.status(500).json({ error: "Falha ao registrar evento." });
+  }
+
+  const { data: checkout, error: checkoutError } = await admin
+    .from("billing_checkouts")
+    .select("user_id, plan, cycle, status")
+    .eq("checkout_id", checkoutId)
+    .single();
+
+  if (checkoutError || !checkout) {
+    console.error("Checkout Asaas não encontrado:", checkoutId, checkoutError);
+    return res.status(200).json({ received: true, ignored: true });
+  }
+
+  const customerId = event.checkout?.customer || null;
+  const subscriptionId = event.checkout?.subscription?.id || null;
+
   try {
-    if (event.type === "checkout.session.completed") {
-      const session = event.data.object as Stripe.Checkout.Session;
-      
-      const userId = session.client_reference_id || session.metadata?.userId;
-      const plan = session.metadata?.plan || "pro"; 
-      const customerId = session.customer as string;
+    if (eventType === "CHECKOUT_PAID") {
+      const { error: updateCheckoutError } = await admin.from("billing_checkouts").update({
+        status: "paid",
+        asaas_customer_id: customerId,
+        asaas_subscription_id: subscriptionId,
+        paid_at: new Date().toISOString(),
+      }).eq("checkout_id", checkoutId);
+      if (updateCheckoutError) throw updateCheckoutError;
 
-      if (userId) {
-        console.log(`Atualizando plano do usuário ${userId} para ${plan} com cliente ${customerId}`);
-        
-        const { error } = await supabase
-          .from("profiles")
-          .update({ 
-            plan: plan.charAt(0).toUpperCase() + plan.slice(1),
-            stripe_customer_id: customerId
-          })
-          .eq("id", userId);
+      const { error: updateProfileError } = await admin.from("profiles").update({
+        plan: checkout.plan,
+        billing_provider: "asaas",
+        billing_status: "active",
+        billing_cycle: checkout.cycle,
+        asaas_checkout_id: checkoutId,
+        asaas_customer_id: customerId,
+        asaas_subscription_id: subscriptionId,
+      }).eq("id", checkout.user_id);
+      if (updateProfileError) throw updateProfileError;
+    } else if (eventType === "CHECKOUT_CANCELED" || eventType === "CHECKOUT_EXPIRED") {
+      const status = eventType === "CHECKOUT_CANCELED" ? "canceled" : "expired";
+      const { error: updateCheckoutError } = await admin
+        .from("billing_checkouts")
+        .update({ status })
+        .eq("checkout_id", checkoutId)
+        .neq("status", "paid");
+      if (updateCheckoutError) throw updateCheckoutError;
 
-        if (error) {
-          console.error("Erro ao atualizar Supabase:", error);
-          throw error;
-        }
-      }
-    } 
-    else if (event.type === "customer.subscription.deleted") {
-      const subscription = event.data.object as Stripe.Subscription;
-      const customerId = subscription.customer as string;
-
-      if (customerId) {
-        console.log(`Assinatura cancelada/expirada para cliente ${customerId}. Voltando para plano Free.`);
-        
-        const { error } = await supabase
-          .from("profiles")
-          .update({ plan: "Free" })
-          .eq("stripe_customer_id", customerId);
-
-        if (error) {
-          console.error("Erro ao atualizar Supabase no downgrade:", error);
-        }
+      if (checkout.status !== "paid") {
+        const { error: updateProfileError } = await admin.from("profiles").update({
+          billing_status: status,
+        }).eq("id", checkout.user_id).eq("asaas_checkout_id", checkoutId);
+        if (updateProfileError) throw updateProfileError;
       }
     }
 
-    res.status(200).json({ received: true });
+    return res.status(200).json({ received: true });
   } catch (error) {
-    console.error("Internal Webhook Error", error);
-    res.status(500).json({ error: "Internal Server Error" });
+    await admin.from("billing_webhook_events").delete().eq("event_id", eventId);
+    console.error("Erro ao processar webhook Asaas:", error);
+    return res.status(500).json({ error: "Falha ao processar evento." });
   }
 }
-
