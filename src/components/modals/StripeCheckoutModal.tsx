@@ -35,17 +35,11 @@ export function AsaasCheckoutModal({ isOpen, onClose, plan }: AsaasCheckoutModal
           "Content-Type": "application/json",
           Authorization: `Bearer ${session.access_token}`,
         },
-        body: JSON.stringify({
-          planName: plan.name,
-          cycle: plan.cycle,
-        }),
+        body: JSON.stringify({ planName: plan.name, cycle: plan.cycle }),
       });
 
       const data = await response.json().catch(() => ({}));
-      if (!response.ok || !data.url) {
-        throw new Error(data.error || "Não foi possível abrir o pagamento.");
-      }
-
+      if (!response.ok || !data.url) throw new Error(data.error || "Não foi possível abrir o pagamento.");
       window.location.assign(data.url);
     } catch (error: any) {
       setLoading(false);
@@ -65,7 +59,6 @@ export function AsaasCheckoutModal({ isOpen, onClose, plan }: AsaasCheckoutModal
           onClick={loading ? undefined : onClose}
           className="fixed inset-0 bg-background/80 backdrop-blur-sm"
         />
-
         <motion.div
           initial={{ opacity: 0, scale: 0.95, y: 10 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -95,7 +88,6 @@ export function AsaasCheckoutModal({ isOpen, onClose, plan }: AsaasCheckoutModal
               <X className="h-5 w-5" />
             </button>
           </div>
-
           <form onSubmit={handleCheckout} className="space-y-6 p-6">
             <div className="flex items-center justify-between rounded-2xl border border-border bg-secondary/40 p-4">
               <div>
@@ -114,7 +106,6 @@ export function AsaasCheckoutModal({ isOpen, onClose, plan }: AsaasCheckoutModal
                 )}
               </div>
             </div>
-
             <div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-border bg-secondary/30 p-4 text-center">
               <ShieldCheck className="h-8 w-8 text-emerald-500" />
               <div>
@@ -124,7 +115,6 @@ export function AsaasCheckoutModal({ isOpen, onClose, plan }: AsaasCheckoutModal
                 </p>
               </div>
             </div>
-
             <Button type="submit" size="xl" shape="pill" disabled={loading} className="w-full shadow-md">
               {loading ? "Abrindo Asaas..." : "Continuar para o pagamento"}
             </Button>
@@ -134,3 +124,6 @@ export function AsaasCheckoutModal({ isOpen, onClose, plan }: AsaasCheckoutModal
     </AnimatePresence>
   );
 }
+
+// Mantém o import antigo até que todos os consumidores sejam renomeados.
+export { AsaasCheckoutModal as StripeCheckoutModal };
