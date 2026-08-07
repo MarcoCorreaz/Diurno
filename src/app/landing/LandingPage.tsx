@@ -57,7 +57,7 @@ export default function LandingPage() {
         <div className="font-sans text-xl font-semibold tracking-tight">Diurno.</div>
         <div className="flex items-center gap-6">
           <Link to="/login" className="text-sm font-medium hover:opacity-70 transition-opacity">Entrar</Link>
-          <Link to="/onboarding" className={cn(buttonVariants({ size: "sm", shape: "pill" }))}>
+          <Link to="/register" className={cn(buttonVariants({ size: "sm", shape: "pill" }))}>
             Começar
           </Link>
         </div>
@@ -91,7 +91,7 @@ export default function LandingPage() {
             className="flex items-center gap-4"
           >
             <ShineButton className={cn(buttonVariants({ size: "xl", shape: "pill", className: "gap-3" }))}>
-              <Link to="/onboarding" className="flex items-center gap-3">
+              <Link to="/register" className="flex items-center gap-3">
                 Organizar meu dia <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
               </Link>
             </ShineButton>

@@ -93,16 +93,13 @@ export default function Onboarding() {
       try {
         const { error } = await supabase
           .from("profiles")
-          .upsert({
-            id: currentUser.id,
-            name: currentUser.displayName || currentUser.email?.split('@')[0] || "Usuário",
-            email: currentUser.email || "",
+          .update({
             goal: goal,
             energy: energy,
             routine_details: routineDetails,
-            plan: "free",
             updated_at: new Date().toISOString()
-          });
+          })
+          .eq("id", currentUser.id);
 
         if (error) throw error;
         toast.success("Perfil configurado com sucesso!");

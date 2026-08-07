@@ -11,7 +11,7 @@ import { toast } from "sonner";
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip } from "recharts";
 
 export default function Profile() {
-  const { currentUser } = useAuth();
+  const { currentUser, session } = useAuth();
   const navigate = useNavigate();
   const [userProfile, setUserProfile] = useState<{
     name: string;
@@ -19,14 +19,14 @@ export default function Profile() {
     avatar: string;
     plan: string;
     memberSince: string;
-    stripeCustomerId: string;
+    asaasCustomerId: string;
   }>({
     name: currentUser?.displayName || "Usuário",
     email: currentUser?.email || "",
     avatar: currentUser?.photoURL || "https://github.com/shadcn.png",
     plan: "Free",
     memberSince: "Carregando...",
-    stripeCustomerId: ""
+    asaasCustomerId: ""
   });
   const [isUploading, setIsUploading] = useState(false);
 
@@ -55,7 +55,7 @@ export default function Profile() {
             avatar: data.avatar_url || prev.avatar,
             plan: data.plan || "Free",
             memberSince: memberSinceStr,
-            stripeCustomerId: data.stripe_customer_id || ""
+            asaasCustomerId: data.asaas_customer_id || ""
           }));
         } else {
           setUserProfile(prev => ({
@@ -157,25 +157,28 @@ export default function Profile() {
       return;
     }
     
-    if (!userProfile.stripeCustomerId) {
-      toast.error("Você ainda não possui faturas ativas no Stripe.");
+    if (!userProfile.asaasCustomerId) {
+      toast.error("Você ainda não possui faturas ativas.");
       return;
     }
     
     try {
-      const res = await fetch("/api/portal", {
+      const res = await fetch("/api/asaas/cancel-subscription", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ customerId: userProfile.stripeCustomerId }) 
+        headers: { 
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${session?.access_token}`
+        },
       });
       const data = await res.json();
-      if (res.ok && data.url) {
-        window.location.href = data.url;
+      if (res.ok && data.success) {
+        toast.success("Assinatura cancelada com sucesso.");
+        setUserProfile(prev => ({ ...prev, plan: "Free" }));
       } else {
-        toast.error(data.error || "Erro ao acessar o portal do cliente.");
+        toast.error(data.error || "Erro ao cancelar assinatura.");
       }
     } catch (err) {
-      toast.error("Erro ao acessar o portal do cliente.");
+      toast.error("Erro ao cancelar assinatura.");
     }
   };
 

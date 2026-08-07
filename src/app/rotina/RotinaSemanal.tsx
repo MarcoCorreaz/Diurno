@@ -40,6 +40,7 @@ export default function RotinaSemanal() {
   const [localRoutine, setLocalRoutine] = useState<Record<string, Task[]>>({});
   const [completions, setCompletions] = useState<Record<string, boolean>>({});
   const [loading, setLoading] = useState(true);
+  const [userPlan, setUserPlan] = useState("free");
 
   const { currentUser } = useAuth();
 
@@ -86,7 +87,13 @@ export default function RotinaSemanal() {
       setLoading(false);
     };
 
+    const fetchPlan = async () => {
+      const { data } = await supabase.from("profiles").select("plan").eq("id", currentUser.id).single();
+      if (data) setUserPlan(data.plan?.toLowerCase() || "free");
+    };
+
     fetchTasks();
+    fetchPlan();
 
     const channel = supabase
       .channel("rotina_tasks_channel")
@@ -179,22 +186,28 @@ export default function RotinaSemanal() {
             description: "Você está no caminho certo. Continue assim!"
         });
         try {
-          await supabase.from("task_completions").insert({
+          const { error } = await supabase.from("task_completions").insert({
             task_id: taskId,
             user_id: currentUser!.id,
             completed_date: dateKey
           });
+          if (error) throw error;
         } catch (error) {
           console.error("Erro ao registrar log de tarefa:", error);
+          toast.error("Falha ao salvar progresso.");
+          setCompletions(prev => ({ ...prev, [compKey]: !isCompleted }));
         }
     } else {
         toast.info("Hábito desmarcado.");
         try {
-          await supabase.from("task_completions")
+          const { error } = await supabase.from("task_completions")
             .delete()
             .match({ task_id: taskId, completed_date: dateKey });
+          if (error) throw error;
         } catch (error) {
           console.error("Erro ao remover log de tarefa:", error);
+          toast.error("Falha ao reverter hábito.");
+          setCompletions(prev => ({ ...prev, [compKey]: !isCompleted }));
         }
     }
   };
@@ -293,7 +306,17 @@ export default function RotinaSemanal() {
               {activeDayData.full}
             </h2>
             <button 
-              onClick={() => { setTaskToEdit(null); setIsSheetOpen(true); }}
+              onClick={() => { 
+                if ((userPlan === "free" || userPlan === "básico") && tasks.length >= 5) {
+                  toast.error("Limite de hábitos atingido", {
+                    description: "Assine o plano Pro para adicionar hábitos ilimitados."
+                  });
+                  navigate("/planos");
+                  return;
+                }
+                setTaskToEdit(null); 
+                setIsSheetOpen(true); 
+              }}
               className="flex items-center gap-2 text-sm font-medium bg-foreground text-background px-4 py-2 rounded-full hover:opacity-90 transition-all shadow-sm active:scale-95"
             >
               <Plus className="w-4 h-4" /> Nova Tarefa

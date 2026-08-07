@@ -50,6 +50,17 @@ export default function Sidebar() {
           <span className="hidden md:block">Planos</span>
         </Link>
         <Link 
+          to="/perfil" 
+          className={cn(
+            "p-2 rounded-lg cursor-pointer transition-all flex items-center md:hidden",
+            path === "/perfil" ? "text-foreground bg-secondary font-medium" : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
+          )}
+        >
+          <div className="w-6 h-6 shrink-0 rounded-full border border-border p-0.5">
+            <img src={currentUser?.photoURL || "https://github.com/shadcn.png"} className="w-full h-full rounded-full bg-muted object-cover" alt="Profile" />
+          </div>
+        </Link>
+        <Link 
           to="/settings" 
           className={cn(
             "p-2 rounded-lg cursor-pointer transition-all flex items-center md:hidden",

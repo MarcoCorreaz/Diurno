@@ -74,12 +74,12 @@ export default function Dashboard() {
     };
 
     const fetchPlan = async () => {
-      const { data, error } = await supabase.from("profiles").select("plan").eq("id", currentUser.id).single();
-      if (error && error.code === 'PGRST116') {
+      const { data, error } = await supabase.from("profiles").select("plan, goal, energy").eq("id", currentUser.id).single();
+      if (!data || (!data.goal && !data.energy)) {
         navigate("/onboarding");
         return;
       }
-      if (data) setUserPlan(data.plan.toLowerCase());
+      if (data) setUserPlan(data.plan?.toLowerCase() || "free");
     };
 
     fetchTasks();
@@ -266,24 +266,29 @@ export default function Dashboard() {
         description: "Você está no caminho certo. Continue assim!"
       });
       try {
-        await supabase.from("task_completions").insert({
+        const { error } = await supabase.from("task_completions").insert({
           task_id: id,
           user_id: currentUser!.id,
           completed_date: todayStr
         });
+        if (error) throw error;
       } catch (error) {
         console.error("Erro ao registrar hábito:", error);
-        toast.error("Falha de conexão ao salvar progresso.");
+        toast.error("Falha ao salvar progresso.");
+        setTasks(prev => prev.map(t => t.id === id ? { ...t, completed: !isCompleted } : t));
       }
     } else {
       toast.info("Hábito desmarcado.");
       try {
-        await supabase.from("task_completions").delete().match({
+        const { error } = await supabase.from("task_completions").delete().match({
           task_id: id,
           completed_date: todayStr
         });
+        if (error) throw error;
       } catch (error) {
         console.error("Erro ao desmarcar hábito:", error);
+        toast.error("Falha ao reverter hábito.");
+        setTasks(prev => prev.map(t => t.id === id ? { ...t, completed: !isCompleted } : t));
       }
     }
   };

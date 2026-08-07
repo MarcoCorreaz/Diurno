@@ -1,14 +1,12 @@
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Lock, CreditCard, ShieldCheck, Check, Sparkles, AlertCircle } from "lucide-react";
+import { X, Lock, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { Confetti } from "@/components/effects/Confetti";
 
-interface StripeCheckoutModalProps {
+interface AsaasCheckoutModalProps {
   isOpen: boolean;
   onClose: () => void;
   plan: {
@@ -20,13 +18,13 @@ interface StripeCheckoutModalProps {
   onSuccess?: () => void;
 }
 
-export function StripeCheckoutModal({
+export function AsaasCheckoutModal({
   isOpen,
   onClose,
   plan,
   onSuccess,
-}: StripeCheckoutModalProps) {
-  const { currentUser } = useAuth();
+}: AsaasCheckoutModalProps) {
+  const { currentUser, session } = useAuth();
   const [loading, setLoading] = useState(false);
   const [showConfetti, setShowConfetti] = useState(false);
 
@@ -37,56 +35,45 @@ export function StripeCheckoutModal({
     setLoading(true);
 
     try {
-      // Tenta acionar endpoint /api/checkout se disponível (quando hospedado na Vercel com API rotas)
-      try {
-        const res = await fetch("/api/checkout", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            planName: plan.name,
-            cycle: plan.cycle,
-            userId: currentUser?.id,
-          }),
-        });
-        if (res.ok) {
-          const data = await res.json();
-          if (data.url) {
-            window.location.href = data.url;
-            return;
-          }
-        }
-      } catch (e) {
-        // Fallback contínuo em ambiente sem serverless function ativa
-      }
-
-      // Simulação de transação Stripe + Atualização no Supabase Profile para demonstração SaaS
-      await new Promise((resolve) => setTimeout(resolve, 1500));
-
-      if (currentUser) {
-        const normalizedPlan = plan.name === "Vitalício" ? "lifetime" : plan.name.toLowerCase();
-        await supabase
-          .from("profiles")
-          .update({
-            plan: normalizedPlan,
-            updated_at: new Date().toISOString(),
-          })
-          .eq("id", currentUser.id);
-      }
-
-      setShowConfetti(true);
-      toast.success(`Assinatura ${plan.name} ativada com sucesso!`, {
-        description: "Bem-vindo à experiência Premium da Semana. Aproveite todos os recursos ilimitados.",
+      // 1. Criar ou obter Cliente
+      const customerRes = await fetch("/api/asaas/create-customer", {
+        method: "POST",
+        headers: { 
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${session?.access_token}`
+        },
       });
 
-      setTimeout(() => {
-        setLoading(false);
-        onClose();
-        if (onSuccess) onSuccess();
-      }, 2000);
+      if (!customerRes.ok) throw new Error("Falha ao criar/obter cliente");
+      const customerData = await customerRes.json();
+
+      // 2. Criar Assinatura / Pagamento
+      const subRes = await fetch("/api/asaas/create-subscription", {
+        method: "POST",
+        headers: { 
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${session?.access_token}`
+        },
+        body: JSON.stringify({
+          planName: plan.name,
+          cycle: plan.cycle,
+          customerId: customerData.customerId,
+        }),
+      });
+
+      if (!subRes.ok) throw new Error("Falha ao gerar cobrança");
+      const subData = await subRes.json();
+
+      if (subData.url) {
+        window.location.href = subData.url;
+        return;
+      }
+
+      throw new Error("Link de pagamento não retornado.");
     } catch (error: any) {
       setLoading(false);
       toast.error("Erro no pagamento", {
-        description: "Não foi possível processar a assinatura. Tente novamente.",
+        description: "Não foi possível processar a assinatura. Tente novamente mais tarde.",
       });
     }
   };
@@ -110,16 +97,16 @@ export function StripeCheckoutModal({
         >
           <Confetti isActive={showConfetti} onComplete={() => setShowConfetti(false)} />
 
-          {/* Cabeçalho Stripe */}
+          {/* Cabeçalho */}
           <div className="bg-secondary/60 border-b border-border p-6 flex items-center justify-between">
             <div className="flex items-center gap-2">
               <div className="w-8 h-8 rounded-full bg-foreground text-background flex items-center justify-center font-bold text-xs">
-                S
+                A
               </div>
               <div>
                 <h3 className="font-sans font-semibold text-foreground text-base">Diurno Checkout</h3>
                 <p className="text-xs text-muted-foreground flex items-center gap-1">
-                  <Lock className="w-3 h-3" /> Powered by Stripe
+                  <Lock className="w-3 h-3" /> Pagamento Seguro via Asaas
                 </p>
               </div>
             </div>
@@ -132,7 +119,6 @@ export function StripeCheckoutModal({
           </div>
 
           <form onSubmit={handleCheckout} className="p-6 space-y-6">
-            {/* Resumo do Plano */}
             <div className="bg-secondary/40 border border-border rounded-2xl p-4 flex items-center justify-between">
               <div>
                 <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
@@ -152,18 +138,16 @@ export function StripeCheckoutModal({
               </div>
             </div>
 
-            {/* Aviso de redirecionamento para o Stripe Seguro */}
             <div className="bg-secondary/30 rounded-xl p-4 border border-border flex flex-col items-center justify-center text-center gap-3">
               <ShieldCheck className="w-8 h-8 text-emerald-500" />
               <div>
-                <p className="text-sm text-foreground font-medium">Pagamento Seguro com Stripe</p>
+                <p className="text-sm text-foreground font-medium">Pagamento Seguro</p>
                 <p className="text-xs text-muted-foreground mt-1">
-                  Você será redirecionado para a página de checkout criptografada do Stripe para finalizar a assinatura.
+                  Você será redirecionado para a nossa página segura de pagamento para finalizar a assinatura via Pix, Boleto ou Cartão.
                 </p>
               </div>
             </div>
 
-            {/* Botão Confirmar */}
             <Button
               type="submit"
               size="xl"

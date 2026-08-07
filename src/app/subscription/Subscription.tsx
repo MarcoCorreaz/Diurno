@@ -9,7 +9,7 @@ import { useNavigate } from "react-router-dom";
 import Sidebar from "@/components/layout/Sidebar";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { StripeCheckoutModal } from "@/components/modals/StripeCheckoutModal";
+import { AsaasCheckoutModal } from "@/components/modals/AsaasCheckoutModal";
 
 export const PLANS = [
   {
@@ -250,7 +250,7 @@ export default function Subscription() {
         </div>
       </main>
 
-      <StripeCheckoutModal
+      <AsaasCheckoutModal
         isOpen={!!selectedPlan}
         onClose={() => setSelectedPlan(null)}
         plan={selectedPlan}
