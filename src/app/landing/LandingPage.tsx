@@ -14,6 +14,9 @@ import { TextRotate } from "@/components/effects/TextRotate";
 import { TextShimmer } from "@/components/effects/TextShimmer";
 import { BackgroundGradientAnimation } from "@/components/ui/BackgroundGradientAnimation";
 import { ShineButton } from "@/components/effects/ShineButton";
+import { NumberFlow } from "@/components/effects/NumberFlow";
+import { FAQAccordion } from "@/components/effects/FAQAccordion";
+import { TestimonialCarousel } from "@/components/effects/TestimonialCarousel";
 
 export default function LandingPage() {
   useLenis();
@@ -42,26 +45,28 @@ export default function LandingPage() {
         </div>
       </div>
 
-      {/* Floating Navbar — scroll-aware header inspired by 21st.dev */}
-      <motion.header 
-        initial={{ opacity: 0, y: -10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6, delay: 0.1 }}
-        className={cn(
-          "sticky top-0 w-full px-6 md:px-12 py-6 flex items-center justify-between z-50 transition-all duration-300",
-          scrolled
-            ? "bg-background/80 backdrop-blur-xl border-b border-border/50 shadow-sm py-4"
-            : "bg-transparent border-b border-transparent"
-        )}
-      >
-        <div className="font-sans text-xl font-semibold tracking-tight">Diurno.</div>
-        <div className="flex items-center gap-6">
-          <Link to="/login" className="text-sm font-medium hover:opacity-70 transition-opacity">Entrar</Link>
-          <Link to="/register" className={cn(buttonVariants({ size: "sm", shape: "pill" }))}>
-            Começar
-          </Link>
-        </div>
-      </motion.header>
+      {/* Floating Navbar (Pill Header) */}
+      <div className="fixed top-0 w-full z-50 flex justify-center pt-6 px-4 pointer-events-none">
+        <motion.header 
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.1 }}
+          className={cn(
+            "pointer-events-auto flex items-center justify-between transition-all duration-300 rounded-full",
+            scrolled
+              ? "bg-background/80 backdrop-blur-xl border border-border shadow-sm py-3 px-6 w-full max-w-3xl"
+              : "bg-transparent border border-transparent py-4 px-6 w-full max-w-6xl"
+          )}
+        >
+          <div className="font-sans text-xl font-semibold tracking-tight">Diurno.</div>
+          <div className="flex items-center gap-6">
+            <Link to="/login" className="text-sm font-medium hover:opacity-70 transition-opacity">Entrar</Link>
+            <Link to="/register" className={cn(buttonVariants({ size: "sm", shape: "pill" }))}>
+              Começar
+            </Link>
+          </div>
+        </motion.header>
+      </div>
 
       {/* Hero — with TextRotate & ShineButton */}
       <section className="relative w-full overflow-hidden flex items-center min-h-[90vh] pt-32 pb-20">
@@ -181,22 +186,21 @@ export default function LandingPage() {
             <p className="text-muted-foreground text-lg max-w-xl">Nada de dashboards poluídos. Apenas o que importa para o seu progresso diário, sem promessas mágicas.</p>
           </motion.div>
           
-          <div className="grid md:grid-cols-3 gap-8">
+          <div className="grid md:grid-cols-3 gap-4 max-w-6xl mx-auto auto-rows-[280px]">
             <motion.div 
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: "-50px" }}
               transition={{ duration: 0.6, delay: 0.1 }}
+              className="md:col-span-2 relative flex flex-col justify-end bg-card border border-border rounded-2xl p-6 overflow-hidden transition-all duration-200 hover:border-white/20 group"
             >
-              <SpotlightCard className="h-full">
-                <div className="w-12 h-12 border border-border rounded-full flex items-center justify-center mb-8 bg-background text-foreground shadow-sm">
-                  <Calendar className="w-5 h-5" />
-                </div>
-                <h3 className="font-sans text-2xl font-semibold mb-4 text-foreground tracking-tight">Organização tangível</h3>
-                <p className="text-base text-muted-foreground leading-relaxed">
-                  Veja suas tarefas em uma linha do tempo clara, com blocos bem definidos. Chega de listas infinitas e ansiedade.
-                </p>
-              </SpotlightCard>
+              <div className="absolute top-6 right-6 w-12 h-12 rounded-full flex items-center justify-center bg-background border border-border shadow-sm group-hover:text-morning transition-colors">
+                <Calendar className="w-5 h-5" />
+              </div>
+              <h3 className="font-sans text-2xl font-semibold mb-2 text-foreground tracking-tight z-10">Organização tangível</h3>
+              <p className="text-base text-muted-foreground leading-relaxed max-w-md z-10">
+                Veja suas tarefas em uma linha do tempo clara, com blocos bem definidos. Chega de listas infinitas e ansiedade.
+              </p>
             </motion.div>
             
             <motion.div 
@@ -204,16 +208,15 @@ export default function LandingPage() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: "-50px" }}
               transition={{ duration: 0.6, delay: 0.2 }}
+              className="md:col-span-1 relative flex flex-col justify-end bg-card border border-border rounded-2xl p-6 overflow-hidden transition-all duration-200 hover:border-white/20 group"
             >
-              <SpotlightCard className="h-full">
-                <div className="w-12 h-12 border border-border rounded-full flex items-center justify-center mb-8 bg-background text-foreground shadow-sm">
-                  <Clock className="w-5 h-5" />
-                </div>
-                <h3 className="font-sans text-2xl font-semibold mb-4 text-foreground tracking-tight">Ajuste dinâmico</h3>
-                <p className="text-base text-muted-foreground leading-relaxed">
-                  Imprevistos acontecem. Realoque blocos de tempo com um clique e mantenha o dia fluindo sem frustração.
-                </p>
-              </SpotlightCard>
+              <div className="absolute top-6 right-6 w-12 h-12 rounded-full flex items-center justify-center bg-background border border-border shadow-sm group-hover:text-afternoon transition-colors">
+                <Clock className="w-5 h-5" />
+              </div>
+              <h3 className="font-sans text-2xl font-semibold mb-2 text-foreground tracking-tight z-10">Ajuste dinâmico</h3>
+              <p className="text-base text-muted-foreground leading-relaxed z-10">
+                Imprevistos acontecem. Realoque blocos de tempo com um clique sem frustração.
+              </p>
             </motion.div>
             
             <motion.div 
@@ -221,17 +224,48 @@ export default function LandingPage() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: "-50px" }}
               transition={{ duration: 0.6, delay: 0.3 }}
+              className="md:col-span-3 relative flex flex-col md:flex-row md:items-center justify-between bg-card border border-border rounded-2xl p-8 overflow-hidden transition-all duration-200 hover:border-white/20 group"
             >
-              <SpotlightCard className="h-full">
-                <div className="w-12 h-12 border border-border rounded-full flex items-center justify-center mb-8 bg-background text-foreground shadow-sm">
+              <div className="max-w-xl z-10">
+                <div className="w-12 h-12 rounded-full flex items-center justify-center bg-background border border-border shadow-sm mb-6 group-hover:text-evening transition-colors">
                   <CheckCircle2 className="w-5 h-5" />
                 </div>
-                <h3 className="font-sans text-2xl font-semibold mb-4 text-foreground tracking-tight">Foco no agora</h3>
+                <h3 className="font-sans text-2xl font-semibold mb-2 text-foreground tracking-tight">Foco no agora</h3>
                 <p className="text-base text-muted-foreground leading-relaxed">
-                  Apenas o que importa no momento está visível. Sem notificações inúteis e distrações que roubam sua atenção.
+                  Apenas o que importa no momento está visível. Sem notificações inúteis e distrações que roubam sua atenção, para que você possa desligar no fim do dia em paz.
                 </p>
-              </SpotlightCard>
+              </div>
             </motion.div>
+          </div>
+        </div>
+      </section>
+
+      {/* Stats / Social Proof */}
+      <section className="py-24 px-6 bg-secondary/10 border-t border-border">
+        <div className="max-w-5xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-8 md:divide-x md:divide-border/50">
+          <div className="flex flex-col items-center text-center px-4">
+            <span className="text-4xl md:text-5xl font-mono font-bold text-gradient mb-2 tracking-tight">
+              <NumberFlow value={15200} />+
+            </span>
+            <span className="text-sm text-muted-foreground font-medium uppercase tracking-wider">Rotinas geradas</span>
+          </div>
+          <div className="flex flex-col items-center text-center px-4">
+            <span className="text-4xl md:text-5xl font-mono font-bold text-gradient mb-2 tracking-tight">
+              <NumberFlow value={89} />%
+            </span>
+            <span className="text-sm text-muted-foreground font-medium uppercase tracking-wider">Mais foco relatado</span>
+          </div>
+          <div className="flex flex-col items-center text-center px-4">
+            <span className="text-4xl md:text-5xl font-mono font-bold text-gradient mb-2 tracking-tight">
+              <NumberFlow value={42} delay={0.2} />h
+            </span>
+            <span className="text-sm text-muted-foreground font-medium uppercase tracking-wider">Economizadas/mês</span>
+          </div>
+          <div className="flex flex-col items-center text-center px-4">
+            <span className="text-4xl md:text-5xl font-mono font-bold text-gradient mb-2 tracking-tight flex items-end justify-center">
+              <NumberFlow value={5} delay={0.4} />.<NumberFlow value={0} delay={0.4} />
+            </span>
+            <span className="text-sm text-muted-foreground font-medium uppercase tracking-wider">Avaliação média</span>
           </div>
         </div>
       </section>
@@ -361,6 +395,40 @@ export default function LandingPage() {
               );
             })}
           </div>
+        </div>
+      </section>
+
+      {/* Testimonials */}
+      <section className="pt-24 pb-12 overflow-hidden border-t border-border">
+        <div className="max-w-6xl mx-auto px-6 mb-12 text-center">
+          <TextShimmer className="font-sans text-3xl md:text-4xl font-semibold mb-4 text-foreground tracking-tight">O que dizem sobre nós</TextShimmer>
+          <p className="text-muted-foreground text-lg">Pessoas reais recuperando seu tempo.</p>
+        </div>
+        <TestimonialCarousel 
+          testimonials={[
+            { name: "Lucas M.", role: "Desenvolvedor", initials: "LM", content: "A linha do tempo do Diurno mudou como eu encaro o meu dia. Não é mais uma lista infinita, é o que cabe no meu tempo real." },
+            { name: "Marina S.", role: "Designer", initials: "MS", content: "Minimalista, sem notificações chatas e direto ao ponto. Exatamente o que eu precisava para focar nas minhas entregas." },
+            { name: "Thiago C.", role: "Empreendedor", initials: "TC", content: "O fato de poder ajustar blocos facilmente quando imprevistos acontecem é o maior diferencial. Adeus ansiedade de lista atrasada." },
+            { name: "Ana P.", role: "Estudante", initials: "AP", content: "A divisão de Manhã, Tarde e Noite com as cores me ajuda a entrar no 'modo certo' para cada parte do dia. Incrível." }
+          ]} 
+        />
+      </section>
+
+      {/* FAQ */}
+      <section className="py-24 px-6 border-t border-border bg-secondary/10">
+        <div className="max-w-3xl mx-auto">
+          <div className="text-center mb-16">
+            <h2 className="font-sans text-3xl md:text-4xl font-semibold mb-4 text-foreground tracking-tight">Perguntas Frequentes</h2>
+            <p className="text-muted-foreground text-lg">Tudo o que você precisa saber antes de começar.</p>
+          </div>
+          <FAQAccordion 
+            items={[
+              { question: "O Diurno funciona sem internet?", answer: "Sim. Toda a sua rotina é sincronizada localmente primeiro, garantindo que você tenha acesso rápido às suas tarefas mesmo offline. Assim que reconectar, ele sincroniza com a nuvem." },
+              { question: "Posso integrar com o Google Calendar?", answer: "Estamos trabalhando nessa integração. No momento, o Diurno foca em ser sua ferramenta principal de execução e blocos de tempo, separado das reuniões externas." },
+              { question: "Como funciona a divisão do dia?", answer: "O Diurno separa seu dia em três grandes blocos: Manhã (Foco/Trabalho profundo), Tarde (Execução/Reuniões) e Noite (Pausa). Acreditamos que não somos a mesma pessoa nas diferentes partes do dia." },
+              { question: "Posso cancelar minha assinatura quando quiser?", answer: "Sim, você pode cancelar a qualquer momento sem amarras. O plano gratuito continuará disponível para uso básico." }
+            ]}
+          />
         </div>
       </section>
 
