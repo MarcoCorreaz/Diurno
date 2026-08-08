@@ -1,86 +1,57 @@
 import React, { useRef } from "react";
-import gsap from "gsap";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
-import { useGSAP } from "@gsap/react";
-import { CheckCircle2, Clock, Flame, Sparkles, Target, ArrowRight } from "lucide-react";
+import { motion, useScroll, useTransform } from "framer-motion";
+import { CheckCircle2, Clock, Flame, Sparkles, Target } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-gsap.registerPlugin(ScrollTrigger, useGSAP);
-
 export function ScrollExperienceSection() {
-  const sectionRef = useRef<HTMLDivElement>(null);
-  const triggerRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  
+  // O container tem 300vh para permitir rolagem, enquanto o conteúdo é "sticky top-0 h-screen"
+  const { scrollYProgress } = useScroll({
+    target: containerRef,
+    offset: ["start start", "end end"]
+  });
 
-  // Refs para os cards de cada etapa
-  const card1Ref = useRef<HTMLDivElement>(null);
-  const card2Ref = useRef<HTMLDivElement>(null);
-  const card3Ref = useRef<HTMLDivElement>(null);
+  // Mapeamento de progresso (0 a 1) para simular as antigas transições GSAP.
+  // Fases:
+  // 0.00 -> 0.25 : Card 1 estático
+  // 0.25 -> 0.45 : Card 1 sai, Card 2 entra
+  // 0.45 -> 0.55 : Card 2 estático
+  // 0.55 -> 0.75 : Card 2 sai, Card 3 entra
+  // 0.75 -> 1.00 : Card 3 estático
 
-  // Refs para os indicadores dos números (01, 02, 03)
-  const ind1Ref = useRef<HTMLDivElement>(null);
-  const ind2Ref = useRef<HTMLDivElement>(null);
-  const ind3Ref = useRef<HTMLDivElement>(null);
+  const scaleX = scrollYProgress; // Barra de progresso geral
 
-  // Barra de progresso geral do scroll
-  const progressBarRef = useRef<HTMLDivElement>(null);
+  // Indicadores Numéricos
+  const ind1Opacity = useTransform(scrollYProgress, [0, 0.25, 0.3], [1, 1, 0.3]);
+  const ind1Scale = useTransform(scrollYProgress, [0, 0.25, 0.3], [1.1, 1.1, 1]);
 
-  useGSAP(() => {
-    const tl = gsap.timeline({
-      scrollTrigger: {
-        trigger: triggerRef.current,
-        pin: true,
-        pinType: "transform",
-        start: "top top",
-        end: "+=250%",
-        scrub: 1,
-        anticipatePin: 1,
-      },
-    });
+  const ind2Opacity = useTransform(scrollYProgress, [0.25, 0.3, 0.55, 0.6], [0.3, 1, 1, 0.3]);
+  const ind2Scale = useTransform(scrollYProgress, [0.25, 0.3, 0.55, 0.6], [1, 1.1, 1.1, 1]);
 
-    // Animação da barra de progresso (0% -> 100%)
-    if (progressBarRef.current) {
-      gsap.set(progressBarRef.current, { scaleX: 0, transformOrigin: "left center" });
-      tl.to(progressBarRef.current, { scaleX: 1, ease: "none", duration: 3 }, 0);
-    }
+  const ind3Opacity = useTransform(scrollYProgress, [0.55, 0.6], [0.3, 1]);
+  const ind3Scale = useTransform(scrollYProgress, [0.55, 0.6], [1, 1.1]);
 
-    // Estado inicial: Card 1 visível, Card 2 e Card 3 escondidos e abaixo
-    gsap.set(card1Ref.current, { opacity: 1, y: 0, scale: 1 });
-    gsap.set(card2Ref.current, { opacity: 0, y: 80, scale: 0.92 });
-    gsap.set(card3Ref.current, { opacity: 0, y: 80, scale: 0.92 });
+  // Card 1
+  const card1Opacity = useTransform(scrollYProgress, [0, 0.25, 0.45], [1, 1, 0]);
+  const card1Y = useTransform(scrollYProgress, [0, 0.25, 0.45], [0, 0, -60]);
+  const card1Scale = useTransform(scrollYProgress, [0, 0.25, 0.45], [1, 1, 0.95]);
 
-    gsap.set(ind1Ref.current, { opacity: 1, scale: 1.1 });
-    gsap.set(ind2Ref.current, { opacity: 0.3, scale: 1 });
-    gsap.set(ind3Ref.current, { opacity: 0.3, scale: 1 });
+  // Card 2
+  const card2Opacity = useTransform(scrollYProgress, [0.25, 0.45, 0.55, 0.75], [0, 1, 1, 0]);
+  const card2Y = useTransform(scrollYProgress, [0.25, 0.45, 0.55, 0.75], [80, 0, 0, -60]);
+  const card2Scale = useTransform(scrollYProgress, [0.25, 0.45, 0.55, 0.75], [0.92, 1, 1, 0.95]);
 
-    // Transição: Card 1 -> Card 2 (entre 0.8s e 1.6s da timeline)
-    tl.to(card1Ref.current, { opacity: 0, y: -60, scale: 0.95, ease: "power2.inOut", duration: 0.8 }, 0.8)
-      .to(card2Ref.current, { opacity: 1, y: 0, scale: 1, ease: "power2.out", duration: 0.8 }, 0.8)
-      .to(ind1Ref.current, { opacity: 0.3, scale: 1, duration: 0.4 }, 0.8)
-      .to(ind2Ref.current, { opacity: 1, scale: 1.1, duration: 0.4 }, 0.9);
-
-    // Transição: Card 2 -> Card 3 (entre 1.8s e 2.6s da timeline)
-    tl.to(card2Ref.current, { opacity: 0, y: -60, scale: 0.95, ease: "power2.inOut", duration: 0.8 }, 1.8)
-      .to(card3Ref.current, { opacity: 1, y: 0, scale: 1, ease: "power2.out", duration: 0.8 }, 1.8)
-      .to(ind2Ref.current, { opacity: 0.3, scale: 1, duration: 0.4 }, 1.8)
-      .to(ind3Ref.current, { opacity: 1, scale: 1.1, duration: 0.4 }, 1.9);
-
-    // Final suave segurando na tela
-    tl.to({}, { duration: 0.4 });
-
-    // Recalcular ScrollTrigger em redimensionamentos para evitar quebra em telas móveis/desktop
-    const handleResize = () => ScrollTrigger.refresh();
-    window.addEventListener("resize", handleResize);
-    document.fonts.ready.then(() => ScrollTrigger.refresh());
-    return () => window.removeEventListener("resize", handleResize);
-  }, { scope: sectionRef });
+  // Card 3
+  const card3Opacity = useTransform(scrollYProgress, [0.55, 0.75, 1], [0, 1, 1]);
+  const card3Y = useTransform(scrollYProgress, [0.55, 0.75, 1], [80, 0, 0]);
+  const card3Scale = useTransform(scrollYProgress, [0.55, 0.75, 1], [0.92, 1, 1]);
 
   return (
-    <section ref={sectionRef} className="relative border-t border-border">
-      {/* Container Pinado */}
-      <div
-        ref={triggerRef}
-        className="h-screen w-full max-w-6xl mx-auto px-6 flex flex-col justify-center relative select-none"
-      >
+    <section ref={containerRef} className="relative h-[300vh] border-t border-border">
+      {/* Container Sticky em vez de Pin do GSAP */}
+      <div className="sticky top-0 h-screen w-full max-w-6xl mx-auto px-6 flex flex-col justify-center overflow-hidden select-none">
+        
         {/* Cabeçalho da Seção */}
         <div className="text-center mb-10 md:mb-14">
           <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-secondary border border-border text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-4">
@@ -98,29 +69,29 @@ export function ScrollExperienceSection() {
         {/* Indicadores numéricos 01 - 02 - 03 + Barra de Progresso do Scroll */}
         <div className="max-w-2xl mx-auto w-full mb-8">
           <div className="flex items-center justify-between text-xs font-mono font-bold tracking-widest uppercase text-muted-foreground mb-3 px-4">
-            <div ref={ind1Ref} className="flex items-center gap-2 transition-all">
+            <motion.div style={{ opacity: ind1Opacity, scale: ind1Scale }} className="flex items-center gap-2 origin-left">
               <span className="w-6 h-6 rounded-full bg-secondary border border-border flex items-center justify-center text-foreground font-sans">
                 01
               </span>
               <span>Clareza Matinal</span>
-            </div>
-            <div ref={ind2Ref} className="flex items-center gap-2 transition-all">
+            </motion.div>
+            <motion.div style={{ opacity: ind2Opacity, scale: ind2Scale }} className="flex items-center gap-2 origin-center">
               <span className="w-6 h-6 rounded-full bg-secondary border border-border flex items-center justify-center text-foreground font-sans">
                 02
               </span>
               <span>Ajuste Real</span>
-            </div>
-            <div ref={ind3Ref} className="flex items-center gap-2 transition-all">
+            </motion.div>
+            <motion.div style={{ opacity: ind3Opacity, scale: ind3Scale }} className="flex items-center gap-2 origin-right">
               <span className="w-6 h-6 rounded-full bg-secondary border border-border flex items-center justify-center text-foreground font-sans">
                 03
               </span>
               <span>Sequência</span>
-            </div>
+            </motion.div>
           </div>
 
           <div className="w-full h-1 bg-secondary rounded-full overflow-hidden relative">
-            <div
-              ref={progressBarRef}
+            <motion.div
+              style={{ scaleX, transformOrigin: "left center" }}
               className="absolute top-0 left-0 h-full w-full bg-foreground rounded-full"
             />
           </div>
@@ -129,9 +100,9 @@ export function ScrollExperienceSection() {
         {/* Cards das 3 Etapas - Empilhados um sobre o outro no centro */}
         <div className="relative w-full max-w-3xl mx-auto h-[320px] md:h-[340px]">
           {/* Card 1: Clareza Matinal */}
-          <div
-            ref={card1Ref}
-            className="absolute inset-0 bg-card border border-border rounded-3xl p-6 md:p-10 shadow-lg flex flex-col md:flex-row items-center gap-8"
+          <motion.div
+            style={{ opacity: card1Opacity, y: card1Y, scale: card1Scale }}
+            className="absolute inset-0 bg-card border border-border rounded-3xl p-6 md:p-10 shadow-lg flex flex-col md:flex-row items-center gap-8 pointer-events-auto"
           >
             <div className="flex-1">
               <span className="text-xs font-bold text-morning uppercase tracking-widest mb-2 block">
@@ -148,7 +119,6 @@ export function ScrollExperienceSection() {
                 Foco protegido sem distrações
               </div>
             </div>
-            {/* Visualização de Mini Interface */}
             <div className="w-full md:w-64 bg-background border border-border rounded-2xl p-4 flex flex-col gap-3 shadow-inner">
               <div className="flex items-center justify-between border-b border-border pb-2">
                 <span className="text-xs font-medium text-muted-foreground">Progresso</span>
@@ -171,12 +141,12 @@ export function ScrollExperienceSection() {
                 <span className="text-xs text-muted-foreground">Leitura 20 págs</span>
               </div>
             </div>
-          </div>
+          </motion.div>
 
           {/* Card 2: Ajuste Real */}
-          <div
-            ref={card2Ref}
-            className="absolute inset-0 bg-card border border-border rounded-3xl p-6 md:p-10 shadow-lg flex flex-col md:flex-row items-center gap-8"
+          <motion.div
+            style={{ opacity: card2Opacity, y: card2Y, scale: card2Scale }}
+            className="absolute inset-0 bg-card border border-border rounded-3xl p-6 md:p-10 shadow-lg flex flex-col md:flex-row items-center gap-8 pointer-events-auto"
           >
             <div className="flex-1">
               <span className="text-xs font-bold text-afternoon uppercase tracking-widest mb-2 block">
@@ -193,7 +163,6 @@ export function ScrollExperienceSection() {
                 Cronograma dinâmico e flexível
               </div>
             </div>
-            {/* Visualização de Mini Interface */}
             <div className="w-full md:w-64 bg-background border border-border rounded-2xl p-4 flex flex-col gap-3 shadow-inner">
               <div className="flex items-center justify-between border-b border-border pb-2">
                 <span className="text-xs font-medium text-muted-foreground">Progresso</span>
@@ -212,12 +181,12 @@ export function ScrollExperienceSection() {
                 ✨ Horário ajustado sem conflito
               </div>
             </div>
-          </div>
+          </motion.div>
 
           {/* Card 3: Sequência */}
-          <div
-            ref={card3Ref}
-            className="absolute inset-0 bg-card border border-border rounded-3xl p-6 md:p-10 shadow-lg flex flex-col md:flex-row items-center gap-8"
+          <motion.div
+            style={{ opacity: card3Opacity, y: card3Y, scale: card3Scale }}
+            className="absolute inset-0 bg-card border border-border rounded-3xl p-6 md:p-10 shadow-lg flex flex-col md:flex-row items-center gap-8 pointer-events-auto"
           >
             <div className="flex-1">
               <span className="text-xs font-bold text-emerald-500 uppercase tracking-widest mb-2 block">
@@ -234,7 +203,6 @@ export function ScrollExperienceSection() {
                 Hábito fortalecido todo dia
               </div>
             </div>
-            {/* Visualização de Mini Interface */}
             <div className="w-full md:w-64 bg-background border border-border rounded-2xl p-4 flex flex-col gap-3 shadow-inner">
               <div className="flex items-center justify-between border-b border-border pb-2">
                 <span className="text-xs font-medium text-muted-foreground">Status do Dia</span>
@@ -250,7 +218,7 @@ export function ScrollExperienceSection() {
                 </span>
               </div>
             </div>
-          </div>
+          </motion.div>
         </div>
       </div>
     </section>
