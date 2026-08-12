@@ -106,8 +106,9 @@ export default function Onboarding() {
         if (error) throw error;
         toast.success("Perfil configurado com sucesso!");
         navigate("/dashboard");
-      } catch (err) {
-        toast.error("Erro ao salvar as preferências.");
+      } catch (err: any) {
+        console.error("Erro do Supabase (finishOnboarding):", err.message, err.code, err.details, err);
+        toast.error("Erro ao salvar as preferências.", { description: err.message || "Erro desconhecido" });
       }
     }
   };
@@ -138,7 +139,7 @@ export default function Onboarding() {
                 Nós aprendemos<br />como você funciona.
               </h1>
               <p className="text-lg text-muted-foreground max-w-lg mx-auto story-element">
-                Role para baixo para entender como a Diurno personaliza cada minuto do seu dia.
+                Role para baixo para entender como o Rituno personaliza cada minuto do seu dia.
               </p>
               <div className="mt-16 animate-bounce story-element">
                 <div className="w-8 h-12 rounded-full border-2 border-border flex items-start justify-center p-1 mx-auto">

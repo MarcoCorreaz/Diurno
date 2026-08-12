@@ -58,7 +58,7 @@ export default function LandingPage() {
               : "bg-transparent border border-transparent py-4 px-6 w-full max-w-6xl"
           )}
         >
-          <div className="font-sans text-xl font-semibold tracking-tight">Diurno.</div>
+          <div className="font-sans text-xl font-semibold tracking-tight">Rituno.</div>
           <div className="flex items-center gap-6">
             <Link to="/login" className="text-sm font-medium hover:opacity-70 transition-opacity">Entrar</Link>
             <Link to="/register" className={cn(buttonVariants({ size: "sm", shape: "pill" }))}>
@@ -406,7 +406,7 @@ export default function LandingPage() {
         </div>
         <TestimonialCarousel 
           testimonials={[
-            { name: "Lucas M.", role: "Desenvolvedor", initials: "LM", content: "A linha do tempo do Diurno mudou como eu encaro o meu dia. Não é mais uma lista infinita, é o que cabe no meu tempo real." },
+            { name: "Lucas M.", role: "Desenvolvedor", initials: "LM", content: "A linha do tempo do Rituno mudou como eu encaro o meu dia. Não é mais uma lista infinita, é o que cabe no meu tempo real." },
             { name: "Marina S.", role: "Designer", initials: "MS", content: "Minimalista, sem notificações chatas e direto ao ponto. Exatamente o que eu precisava para focar nas minhas entregas." },
             { name: "Thiago C.", role: "Empreendedor", initials: "TC", content: "O fato de poder ajustar blocos facilmente quando imprevistos acontecem é o maior diferencial. Adeus ansiedade de lista atrasada." },
             { name: "Ana P.", role: "Estudante", initials: "AP", content: "A divisão de Manhã, Tarde e Noite com as cores me ajuda a entrar no 'modo certo' para cada parte do dia. Incrível." }
@@ -423,9 +423,9 @@ export default function LandingPage() {
           </div>
           <FAQAccordion 
             items={[
-              { question: "O Diurno funciona sem internet?", answer: "Sim. Toda a sua rotina é sincronizada localmente primeiro, garantindo que você tenha acesso rápido às suas tarefas mesmo offline. Assim que reconectar, ele sincroniza com a nuvem." },
-              { question: "Posso integrar com o Google Calendar?", answer: "Estamos trabalhando nessa integração. No momento, o Diurno foca em ser sua ferramenta principal de execução e blocos de tempo, separado das reuniões externas." },
-              { question: "Como funciona a divisão do dia?", answer: "O Diurno separa seu dia em três grandes blocos: Manhã (Foco/Trabalho profundo), Tarde (Execução/Reuniões) e Noite (Pausa). Acreditamos que não somos a mesma pessoa nas diferentes partes do dia." },
+              { question: "O Rituno funciona sem internet?", answer: "Sim. Toda a sua rotina é sincronizada localmente primeiro, garantindo que você tenha acesso rápido às suas tarefas mesmo offline. Assim que reconectar, ele sincroniza com a nuvem." },
+              { question: "Posso integrar com o Google Calendar?", answer: "Estamos trabalhando nessa integração. No momento, o Rituno foca em ser sua ferramenta principal de execução e blocos de tempo, separado das reuniões externas." },
+              { question: "Como funciona a divisão do dia?", answer: "O Rituno separa seu dia em três grandes blocos: Manhã (Foco/Trabalho profundo), Tarde (Execução/Reuniões) e Noite (Pausa). Acreditamos que não somos a mesma pessoa nas diferentes partes do dia." },
               { question: "Posso cancelar minha assinatura quando quiser?", answer: "Sim, você pode cancelar a qualquer momento sem amarras. O plano gratuito continuará disponível para uso básico." }
             ]}
           />
@@ -450,7 +450,7 @@ export default function LandingPage() {
       </section>
       
       <footer className="py-12 text-center text-sm text-muted-foreground border-t border-border">
-        <p>&copy; 2026 Diurno. Todos os direitos reservados.</p>
+        <p>&copy; 2026 Rituno. Todos os direitos reservados.</p>
       </footer>
     </div>
   );

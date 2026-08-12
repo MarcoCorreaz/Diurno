@@ -1,6 +1,6 @@
-# Diurno Design System — UI / UX Reference
+# Rituno Design System — UI / UX Reference
 
-O projeto **Diurno** adota o modelo **Craft · Memory · Consistency** (inspirado no repositório `Dammyjay93/interface-design`) combinado com estética moderna escuro absoluto (Vercel/Linear).
+O projeto **Rituno** adota o modelo **Craft · Memory · Consistency** (inspirado no repositório `Dammyjay93/interface-design`) combinado com estética moderna escuro absoluto (Vercel/Linear).
 
 > O arquivo de memória visual contínuo está em: [system.md](file:///c:/Users/marqu/OneDrive/Documentos/Diurno/.interface-design/system.md).
 
@@ -10,7 +10,7 @@ O projeto **Diurno** adota o modelo **Craft · Memory · Consistency** (inspirad
 
 ### 1. Cards e Paineis
 ```tsx
-// Card Padrão do Diurno (Elevation Level 1)
+// Card Padrão do Rituno (Elevation Level 1)
 <div className="bg-[#101010] border border-white/10 rounded-xl p-4 transition-all duration-200 hover:border-white/20">
   <h3 className="text-zinc-50 font-medium">Título do Card</h3>
   <p className="text-zinc-400 text-sm mt-1">Descrição secundária</p>

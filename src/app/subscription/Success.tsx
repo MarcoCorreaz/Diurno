@@ -81,7 +81,7 @@ export default function Success() {
             </h1>
             
             <p className="text-muted-foreground mb-8">
-              Sua assinatura foi confirmada com sucesso. Agora você tem acesso a todos os recursos premium do Diurno. Prepare-se para decolar a sua rotina!
+              Sua assinatura foi confirmada com sucesso. Agora você tem acesso a todos os recursos premium do Rituno. Prepare-se para decolar a sua rotina!
             </p>
 
             <Button 

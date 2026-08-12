@@ -36,7 +36,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           billingType: "UNDEFINED",
           value: amount,
           dueDate: dueDate.toISOString().split("T")[0],
-          description: "Plano Vitalício Diurno"
+          description: "Plano Vitalício Rituno"
         })
       });
       const data = await asaasRes.json();
@@ -53,7 +53,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           value: amount,
           nextDueDate: new Date().toISOString().split("T")[0],
           cycle: cycle === "yearly" ? "YEARLY" : "MONTHLY",
-          description: `Plano Pro ${cycle === "yearly" ? "Anual" : "Mensal"} Diurno`
+          description: `Plano Pro ${cycle === "yearly" ? "Anual" : "Mensal"} Rituno`
         })
       });
       const data = await asaasRes.json();

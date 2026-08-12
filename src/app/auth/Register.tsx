@@ -20,27 +20,6 @@ export default function Register() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [errorFields, setErrorFields] = useState<{name?: boolean; email?: boolean; password?: boolean; confirmPassword?: boolean; mismatch?: boolean; weak?: boolean}>({});
 
-  const saveUserToSupabase = async (user: any) => {
-    try {
-      const { error } = await supabase.from("profiles").upsert({
-        id: user.id,
-        name: user.user_metadata?.full_name || user.user_metadata?.displayName || name,
-        email: user.email || email,
-        goal: location.state?.goal || "",
-        energy: location.state?.energy || "",
-        routine_details: location.state?.routineDetails || "",
-        plan: "free",
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      });
-      if (error) {
-        console.error("Erro ao salvar perfil no Supabase:", error);
-      }
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -79,9 +58,6 @@ export default function Register() {
       });
 
       if (error) throw error;
-      if (data.user) {
-        await saveUserToSupabase(data.user);
-      }
 
       navigate("/onboarding");
     } catch (error: any) {
@@ -214,6 +190,10 @@ export default function Register() {
 
         <p className="mt-8 text-sm text-muted-foreground">
           Já tem uma conta? <Link to="/login" className="text-foreground font-medium hover:underline transition-all">Entrar</Link>
+        </p>
+
+        <p className="mt-6 text-xs text-muted-foreground text-center max-w-xs">
+          Ao criar sua conta, você declara ter lido e aceito os <Link to="/termos" className="underline hover:text-foreground">Termos de Uso</Link> e reconhece a <Link to="/privacidade" className="underline hover:text-foreground">Política de Privacidade</Link>.
         </p>
       </div>
     </AuthLayout>

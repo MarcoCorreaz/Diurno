@@ -12,7 +12,7 @@ interface SunriseGlowProps {
  * duas elipses radiais empilhadas (uma larga e suave, outra menor e mais
  * intensa), 100% CSS, sem JS de mouse-tracking, sem hard-light.
  *
- * Cor: --color-morning (#FDBA74) — "Diurno" remete ao nascer do dia, então um
+ * Cor: --color-morning (#FDBA74) — "Rituno" remete ao nascer do dia, então um
  * glow quente no topo da hero é o próprio conceito do produto, não decoração
  * genérica. Reaproveita o keyframe .animate-glow-pulse que já existe no
  * index.css, então não adiciona CSS novo.

@@ -14,7 +14,7 @@ export default function Sidebar() {
     <nav className="fixed md:static bottom-0 left-0 z-50 w-full md:w-64 md:h-full md:border-r border-t md:border-t-0 border-border flex flex-row md:flex-col items-center md:items-start py-3 md:py-8 md:px-6 justify-around md:justify-start shrink-0 bg-background text-foreground pb-safe">
       <div className="hidden md:block w-full mb-10 px-2">
         <Link to="/dashboard" className="block hover:opacity-80 transition-opacity">
-          <div className="font-sans text-xl font-semibold tracking-tight">Diurno.</div>
+          <div className="font-sans text-xl font-semibold tracking-tight">Rituno.</div>
         </Link>
       </div>
       

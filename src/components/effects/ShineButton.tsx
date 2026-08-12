@@ -4,6 +4,7 @@ import { cn } from "@/lib/utils";
 interface ShineButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   children: React.ReactNode;
   className?: string;
+  onClick?: React.MouseEventHandler<HTMLButtonElement>;
 }
 
 /**

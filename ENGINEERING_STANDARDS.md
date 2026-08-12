@@ -1,10 +1,10 @@
-# Diurno Engineering & Security Standards
+# Rituno Engineering & Security Standards
 > Diretrizes de Governança, Qualidade e Processo inspiradas em `garrytan/gstack` (Y Combinator CEO) e na metodologia de desenvolvimento com Agentes AI.
 
 ---
 
 ## 1. Filosofia de Operação ("The Software Factory")
-No Diurno, cada alteração e nova funcionalidade deve ser tratada com o rigor de uma equipe completa de engenharia especializada, atuando nos 4 papéis do rito de entrega:
+No Rituno, cada alteração e nova funcionalidade deve ser tratada com o rigor de uma equipe completa de engenharia especializada, atuando nos 4 papéis do rito de entrega:
 
 ```
 [ CEO / Produto ] ──> [ Eng Manager ] ──> [ CSO / Segurança ] ──> [ QA & Release ]

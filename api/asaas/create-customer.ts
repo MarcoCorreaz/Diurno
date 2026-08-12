@@ -35,7 +35,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         "access_token": asaasKey
       },
       body: JSON.stringify({
-        name: profile?.name || user.email?.split("@")[0] || "Usuário Diurno",
+        name: profile?.name || user.email?.split("@")[0] || "Usuário Rituno",
         email: user.email,
         externalReference: user.id
       })

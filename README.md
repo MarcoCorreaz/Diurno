@@ -1,6 +1,6 @@
 <div align="center">
-  <img src="./public/favicon.ico" alt="Diurno Logo" width="100" />
-  <h1>Diurno</h1>
+  <img src="./public/favicon.ico" alt="Rituno Logo" width="100" />
+  <h1>Rituno</h1>
   <p><em>O seu assistente pessoal de produtividade e rotina inteligente.</em></p>
 
   <!-- Badges -->
@@ -17,7 +17,7 @@
 
 ## 📖 Sobre o Projeto
 
-**Diurno** é um aplicativo completo de produtividade desenhado para ajudar os usuários a criarem e manterem bons hábitos diários. Com uma interface de usuário rica e moderna (Dark Mode nativo, micro-interações, layout responsivo), o Diurno foca em uma experiência fluida para aumentar o engajamento e a disciplina.
+**Rituno** é um aplicativo completo de produtividade desenhado para ajudar os usuários a criarem e manterem bons hábitos diários. Com uma interface de usuário rica e moderna (Dark Mode nativo, micro-interações, layout responsivo), o Rituno foca em uma experiência fluida para aumentar o engajamento e a disciplina.
 
 O projeto foi construído para atuar tanto como um rastreador de hábitos focado, quanto como um assistente Pessoal — munido de IA nativa (Integração com LLM) para sugerir rotinas personalizadas e um método Pomodoro embutido.
 
@@ -48,7 +48,7 @@ A arquitetura frontend segue os melhores padrões para React, organizando compon
 
 ### Estrutura de Pastas
 ```text
-diurno/
+rituno/
 ├── api/                   # Serverless Functions (Vercel) para APIs privadas
 ├── public/                # Assets estáticos
 ├── src/
@@ -100,10 +100,10 @@ APP_URL=http://localhost:5173
 
 ```bash
 # Clone o repositório
-git clone https://github.com/MarcoCorreaz/Diurno.git
+git clone https://github.com/MarcoCorreaz/Rituno.git
 
 # Entre na pasta
-cd Diurno
+cd Rituno
 
 # Instale as dependências
 npm install

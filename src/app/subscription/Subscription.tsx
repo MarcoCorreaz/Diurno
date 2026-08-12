@@ -244,7 +244,7 @@ export default function Subscription() {
           {/* Enterprise Contact */}
           <div className="text-center pb-12">
             <p className="text-muted-foreground text-sm">
-              Precisa de um plano para sua equipe? <a href="mailto:suporte@diurno.com" className="text-foreground underline underline-offset-4 decoration-border hover:decoration-foreground transition-all font-medium">Fale com a gente</a>
+              Precisa de um plano para sua equipe? <a href="mailto:suporte@rituno.com.br" className="text-foreground underline underline-offset-4 decoration-border hover:decoration-foreground transition-all font-medium">Fale com a gente</a>
             </p>
           </div>
         </div>

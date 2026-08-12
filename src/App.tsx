@@ -25,6 +25,8 @@ const Subscription = React.lazy(() => import("./app/subscription/Subscription"))
 const Success = React.lazy(() => import("./app/subscription/Success"));
 const Canceled = React.lazy(() => import("./app/subscription/Canceled"));
 const Profile = React.lazy(() => import("./app/profile/Profile"));
+const PrivacyPolicy = React.lazy(() => import("./app/legal/PrivacyPolicy"));
+const TermsOfUse = React.lazy(() => import("./app/legal/TermsOfUse"));
 import { PageTransition } from "@/components/effects/PageTransition";
 
 export default function App() {
@@ -55,6 +57,8 @@ function AppRoutes() {
             <Route path="/redefinir-senha" element={<ResetPassword />} />
             <Route path="/sucesso" element={<Success />} />
             <Route path="/cancelado" element={<Canceled />} />
+            <Route path="/privacidade" element={<PrivacyPolicy />} />
+            <Route path="/termos" element={<TermsOfUse />} />
             <Route element={<ProtectedRoute />}>
               <Route path="/onboarding" element={<Onboarding />} />
               <Route path="/dashboard" element={<Dashboard />} />

@@ -2,14 +2,15 @@
 -- MIGRATION SUPABASE - PROTECT PROFILE COLUMNS
 -- ====================================================================
 
--- Create trigger function to protect plan and stripe_customer_id from client-side updates
+-- Create trigger function to protect plan and asaas_customer_id from client-side updates
 CREATE OR REPLACE FUNCTION public.protect_profile_columns()
 RETURNS TRIGGER AS $$
 BEGIN
-  -- If this is an authenticated user (not service_role), prevent changes to protected columns
   IF auth.role() = 'authenticated' THEN
     NEW.plan = OLD.plan;
-    NEW.stripe_customer_id = OLD.stripe_customer_id;
+    IF to_jsonb(OLD) ? 'asaas_customer_id' THEN
+      NEW.asaas_customer_id = OLD.asaas_customer_id;
+    END IF;
   END IF;
   RETURN NEW;
 END;

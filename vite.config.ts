@@ -13,8 +13,8 @@ export default defineConfig(() => {
         registerType: 'prompt', // Update prompt visível
         includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'mask-icon.svg'],
         manifest: {
-          name: 'Diurno',
-          short_name: 'Diurno',
+          name: 'Rituno',
+          short_name: 'Rituno',
           description: 'Organização de hábitos e tarefas com sugestões de IA',
           theme_color: '#1C1C1A',
           background_color: '#F9F9F6',

@@ -3,7 +3,7 @@ import type { VercelRequest, VercelResponse } from "@vercel/node";
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   // Configuração de CORS para chamadas na Vercel
-  const allowedOrigin = process.env.APP_URL || "https://diurno.vercel.app";
+  const allowedOrigin = process.env.APP_URL || process.env.VITE_APP_URL || "https://rituno.vercel.app";
   res.setHeader("Access-Control-Allow-Credentials", "true");
   res.setHeader("Access-Control-Allow-Origin", allowedOrigin);
   res.setHeader("Access-Control-Allow-Methods", "GET,OPTIONS,POST");

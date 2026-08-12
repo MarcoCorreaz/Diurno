@@ -59,7 +59,7 @@ export function ScrollExperienceSection() {
             Experiência interativa
           </div>
           <h2 className="font-sans text-4xl md:text-5xl font-semibold text-foreground tracking-tight">
-            Como o Diurno transforma o seu dia
+            Como o Rituno transforma o seu dia
           </h2>
           <p className="text-muted-foreground text-sm md:text-base mt-2 max-w-xl mx-auto">
             Role a página para acompanhar as 3 etapas de uma rotina equilibrada e sem estresse.
@@ -112,7 +112,7 @@ export function ScrollExperienceSection() {
                 Apenas 3 metas essenciais
               </h3>
               <p className="text-muted-foreground text-sm md:text-base leading-relaxed mb-6">
-                Nada de listas intermináveis com 30 itens. O Diurno ajuda você a isolar o trabalho profundo pela manhã, garantindo que o mais importante seja concluído primeiro.
+                Nada de listas intermináveis com 30 itens. O Rituno ajuda você a isolar o trabalho profundo pela manhã, garantindo que o mais importante seja concluído primeiro.
               </p>
               <div className="flex items-center gap-2 text-xs font-medium text-foreground bg-secondary/80 px-3 py-1.5 rounded-full w-fit border border-border">
                 <Target className="w-3.5 h-3.5 text-morning" />

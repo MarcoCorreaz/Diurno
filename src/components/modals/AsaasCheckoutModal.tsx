@@ -104,7 +104,7 @@ export function AsaasCheckoutModal({
                 A
               </div>
               <div>
-                <h3 className="font-sans font-semibold text-foreground text-base">Diurno Checkout</h3>
+                <h3 className="font-sans font-semibold text-foreground text-base">Rituno Checkout</h3>
                 <p className="text-xs text-muted-foreground flex items-center gap-1">
                   <Lock className="w-3 h-3" /> Pagamento Seguro via Asaas
                 </p>

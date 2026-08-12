@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 
 const TOUR_STEPS = [
   {
-    title: "Bem-vindo ao Diurno! 👋",
+    title: "Bem-vindo ao Rituno! 👋",
     description: "Vamos fazer um tour rápido de 1 minuto para você dominar sua nova rotina.",
     target: null,
   },
@@ -36,8 +36,16 @@ export function TutorialTour({ userId }: { userId: string }) {
   const [currentStep, setCurrentStep] = useState(0);
 
   useEffect(() => {
+    // Migrate legacy key if present
+    const legacyKey = `diurno_tutorial_${userId}`;
+    const newKey = `rituno_tutorial_${userId}`;
+    const legacyData = localStorage.getItem(legacyKey);
+    if (legacyData && !localStorage.getItem(newKey)) {
+      localStorage.setItem(newKey, legacyData);
+    }
+
     // Check if user has already seen the tutorial
-    const hasSeenTutorial = localStorage.getItem(`diurno_tutorial_${userId}`);
+    const hasSeenTutorial = localStorage.getItem(newKey);
     if (!hasSeenTutorial) {
       // Small delay to let the dashboard render first
       const timer = setTimeout(() => setIsOpen(true), 1500);
@@ -47,7 +55,7 @@ export function TutorialTour({ userId }: { userId: string }) {
 
   const closeTour = () => {
     setIsOpen(false);
-    localStorage.setItem(`diurno_tutorial_${userId}`, "completed");
+    localStorage.setItem(`rituno_tutorial_${userId}`, "completed");
   };
 
   const nextStep = () => {

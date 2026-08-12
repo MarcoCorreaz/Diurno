@@ -3,7 +3,7 @@ import { cn } from "@/lib/utils";
 /**
  * GradientGlow — Radial gradient background that pulses gently.
  * Creates an ambient glow behind the hero section, inspired by 21st.dev homepage.
- * Uses the Diurno color palette: morning (amber), afternoon (sky), zinc.
+ * Uses the Rituno color palette: morning (amber), afternoon (sky), zinc.
  */
 export function GradientGlow({ className }: { className?: string }) {
   return (

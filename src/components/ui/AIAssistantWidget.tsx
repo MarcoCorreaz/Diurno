@@ -74,7 +74,7 @@ export function AIAssistantWidget() {
       const errorMsg: Message = {
         id: (Date.now() + 1).toString(),
         sender: "ai",
-        text: "Dica Diurno IA: Para otimizar seu ritmo diário, separe atividades de foco analítico pela manhã, execução principal à tarde e desconexão à noite.",
+        text: "Dica Rituno IA: Para otimizar seu ritmo diário, separe atividades de foco analítico pela manhã, execução principal à tarde e desconexão à noite.",
       };
       setMessages(prev => [...prev, errorMsg]);
     } finally {
@@ -128,7 +128,7 @@ export function AIAssistantWidget() {
                     </div>
                   </div>
                   <div>
-                    <h3 className="font-semibold text-sm font-sans tracking-tight text-foreground">Diurno Intelligence</h3>
+                    <h3 className="font-semibold text-sm font-sans tracking-tight text-foreground">Rituno Intelligence</h3>
                     <div className="flex items-center gap-1.5">
                       <span className="w-1.5 h-1.5 rounded-full bg-[#10b981] animate-pulse" />
                       <span className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">Online</span>
