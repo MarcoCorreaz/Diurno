@@ -1,8 +1,12 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { createClient } from "@supabase/supabase-js";
+import { checkRateLimit } from "../_lib/rate-limit";
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed. Use POST." });
+
+  const { success } = await checkRateLimit(req, { limit: 5, window: "1m" });
+  if (!success) return res.status(429).json({ error: "Too many requests. Tente novamente em 1 minuto." });
 
   try {
     const authHeader = req.headers.authorization;
@@ -11,6 +15,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const token = authHeader.split(" ")[1];
     const supabaseUrl = process.env.VITE_SUPABASE_URL as string;
     const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY as string;
+    
+    if (!supabaseUrl || !supabaseKey) {
+      return res.status(500).json({ error: "Configuração do Supabase ausente nas variáveis de ambiente." });
+    }
+    
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     const { data: { user }, error: authError } = await supabase.auth.getUser(token);

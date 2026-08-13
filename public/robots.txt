@@ -1,0 +1,14 @@
+User-agent: *
+Disallow: /dashboard
+Disallow: /rotina
+Disallow: /habito
+Disallow: /settings
+Disallow: /perfil
+Disallow: /onboarding
+Disallow: /planos
+
+Allow: /
+Allow: /login
+Allow: /register
+Allow: /privacidade
+Allow: /termos

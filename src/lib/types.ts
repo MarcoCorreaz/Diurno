@@ -22,7 +22,7 @@ export interface UserProfile {
   energy?: string;
   routineDetails?: string;
   plan?: 'free' | 'pro' | 'lifetime';
-  stripeCustomerId?: string;
+  asaasCustomerId?: string;
   createdAt?: string;
   updatedAt?: string;
 }

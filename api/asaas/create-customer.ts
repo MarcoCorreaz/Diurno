@@ -1,8 +1,12 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { createClient } from "@supabase/supabase-js";
+import { checkRateLimit } from "../_lib/rate-limit";
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed. Use POST." });
+
+  const { success } = await checkRateLimit(req, { limit: 5, window: "1m" });
+  if (!success) return res.status(429).json({ error: "Too many requests. Tente novamente em 1 minuto." });
 
   try {
     const authHeader = req.headers.authorization;

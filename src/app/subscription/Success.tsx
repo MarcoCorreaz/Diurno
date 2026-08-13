@@ -10,7 +10,6 @@ import { useAuth } from "@/contexts/AuthContext";
 export default function Success() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const sessionId = searchParams.get("session_id");
   const { currentUser } = useAuth();
   
   const [isVerifying, setIsVerifying] = useState(true);
@@ -26,7 +25,7 @@ export default function Success() {
     const checkPlan = async () => {
       try {
         const { data } = await supabase.from('profiles').select('plan').eq('id', currentUser.id).single();
-        if (data && (data.plan === 'Pro' || data.plan === 'Premium' || data.plan === 'Vitalício')) {
+        if (data && (data.plan === 'pro' || data.plan === 'lifetime')) {
           setIsPro(true);
           setIsVerifying(false);
           return;
@@ -46,7 +45,7 @@ export default function Success() {
     checkPlan();
 
     return () => clearTimeout(timeoutId);
-  }, [currentUser, sessionId]);
+  }, [currentUser]);
 
   return (
     <div className="min-h-[100dvh] w-full flex items-center justify-center bg-background text-foreground p-6">

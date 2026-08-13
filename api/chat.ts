@@ -1,5 +1,7 @@
 import { GoogleGenAI } from "@google/genai";
 import type { VercelRequest, VercelResponse } from "@vercel/node";
+import { createClient } from "@supabase/supabase-js";
+import { checkRateLimit } from "./_lib/rate-limit";
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   // Configuração de CORS para chamadas na Vercel
@@ -21,6 +23,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(405).json({ error: "Method not allowed. Use POST." });
   }
 
+  const { success } = await checkRateLimit(req, { limit: 10, window: "1m" });
+  if (!success) {
+    return res.status(429).json({ error: "Too many requests. Tente novamente em 1 minuto." });
+  }
+
   try {
     const authHeader = req.headers.authorization;
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
@@ -35,7 +42,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
        return res.status(500).json({ error: "Missing Supabase configuration." });
     }
 
-    const { createClient } = require("@supabase/supabase-js");
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     const { data: { user }, error: authError } = await supabase.auth.getUser(token);

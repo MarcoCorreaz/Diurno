@@ -95,7 +95,6 @@ export default function Onboarding() {
           .from("profiles")
           .upsert({
             id: currentUser.id,
-            email: currentUser.email,
             name: currentUser.user_metadata?.full_name || currentUser.email?.split('@')[0],
             goal: goal,
             energy: energy,
