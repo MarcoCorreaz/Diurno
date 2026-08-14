@@ -9,9 +9,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   // Basic authentication using a shared secret configured in Supabase Webhooks
   const secret = process.env.SEND_EMAIL_HOOK_SECRET;
+  
+  if (!secret) {
+    return res.status(500).json({ error: "SEND_EMAIL_HOOK_SECRET não configurada" });
+  }
+
   const authHeader = req.headers["authorization"] || req.headers["x-supabase-signature"];
   
-  if (secret && authHeader !== `Bearer ${secret}` && authHeader !== secret) {
+  if (authHeader !== `Bearer ${secret}` && authHeader !== secret) {
     return res.status(401).json({ error: "Unauthorized" });
   }
 

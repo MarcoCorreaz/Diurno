@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabase";
+import posthog from "posthog-js";
 
 export interface AppUser {
   id: string;
@@ -53,6 +54,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setCurrentUser(formatAppUser(session?.user ?? null));
+      if (session?.user) {
+        posthog.identify(session.user.id);
+      } else {
+        posthog.reset();
+      }
       setLoading(false);
     });
 
@@ -61,6 +67,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       (_event, session) => {
         setSession(session);
         setCurrentUser(formatAppUser(session?.user ?? null));
+        if (session?.user) {
+          posthog.identify(session.user.id);
+        } else {
+          posthog.reset();
+        }
         setLoading(false);
       }
     );

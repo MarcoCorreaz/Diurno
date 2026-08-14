@@ -1,15 +1,23 @@
 <div align="center">
-  <img src="./public/favicon.ico" alt="Rituno Logo" width="100" />
+  <img src="./public/favicon.ico" alt="Rituno Logo" width="80" />
   <h1>Rituno</h1>
-  <p><em>O seu assistente pessoal de produtividade e rotina inteligente.</em></p>
+  <p><em>Rastreador de hábitos diários focado em experiência do usuário, streaks e gamificação leve.</em></p>
 
-  <!-- Badges -->
   <p>
-    <img src="https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB" alt="React" />
-    <img src="https://img.shields.io/badge/Vite-B73BFE?style=for-the-badge&logo=vite&logoColor=FFD62E" alt="Vite" />
+    <img src="https://img.shields.io/badge/React_19-20232A?style=for-the-badge&logo=react&logoColor=61DAFB" alt="React 19" />
     <img src="https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript" />
-    <img src="https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white" alt="Tailwind CSS" />
+    <img src="https://img.shields.io/badge/Vite_6-B73BFE?style=for-the-badge&logo=vite&logoColor=FFD62E" alt="Vite 6" />
+    <img src="https://img.shields.io/badge/Tailwind_CSS_4-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white" alt="Tailwind CSS 4" />
     <img src="https://img.shields.io/badge/Supabase-181818?style=for-the-badge&logo=supabase&logoColor=3ECF8E" alt="Supabase" />
+    <img src="https://img.shields.io/badge/Vercel-000000?style=for-the-badge&logo=vercel&logoColor=white" alt="Vercel" />
+  </p>
+
+  <p>
+    <a href="https://rituno.vercel.app" target="_blank"><strong>→ Acessar o App</strong></a>
+    &nbsp;•&nbsp;
+    <a href="#-como-executar-localmente">Rodar Localmente</a>
+    &nbsp;•&nbsp;
+    <a href="#️-arquitetura">Arquitetura</a>
   </p>
 </div>
 
@@ -17,106 +25,202 @@
 
 ## 📖 Sobre o Projeto
 
-**Rituno** é um aplicativo completo de produtividade desenhado para ajudar os usuários a criarem e manterem bons hábitos diários. Com uma interface de usuário rica e moderna (Dark Mode nativo, micro-interações, layout responsivo), o Rituno foca em uma experiência fluida para aumentar o engajamento e a disciplina.
+O **Rituno** nasceu de uma insatisfação pessoal com os apps de hábitos disponíveis: cheios de notificações agressivas, paywalls confusos e interfaces poluídas. Queria um app que fosse **bonito de usar todos os dias**, com feedback visual real e que não atrapalhasse a rotina.
 
-O projeto foi construído para atuar tanto como um rastreador de hábitos focado, quanto como um assistente Pessoal — munido de IA nativa (Integração com LLM) para sugerir rotinas personalizadas e um método Pomodoro embutido.
+O desafio técnico foi construir uma experiência que parecesse nativa — animações fluidas, respostas instantâneas, sistema de streak consistente — em cima de uma stack 100% serverless e gratuita.
 
----
-
-## ⚡ Funcionalidades Principais
-
-- **📊 Dashboard de Hábitos Diários**: Acompanhe o que você precisa fazer hoje. Conclua tarefas e observe seu progresso ser atualizado em tempo real com animações gratificantes (Confetti).
-- **📅 Planejador Semanal (Rotina)**: Organize sua semana espalhando atividades nos respectivos dias.
-- **⏱️ Pomodoro Timer Nativo**: Técnica de Foco direto no aplicativo para potencializar a execução de hábitos.
-- **🤖 Assistente de IA Integrado**: Uma interface inteligente em formato de chat que interage com o usuário para sugerir melhores distribuições de rotina.
-- **💰 Integração com Stripe**: Assinaturas Premium processadas de forma segura e serverless (Serverless API Functions na Vercel).
-- **🔒 Autenticação e Sincronização em Nuvem**: Login rápido e banco de dados real-time utilizando Supabase.
+> Este é um projeto pessoal em validação. Está 100% gratuito e aberto para uso.
 
 ---
 
-## 🛠️ Arquitetura e Stack
+## ✨ Funcionalidades
 
-A arquitetura frontend segue os melhores padrões para React, organizando componentes baseados em suas responsabilidades (Features x Providers x UI Layouts).
+| Feature | Detalhe |
+|---|---|
+| 📊 **Dashboard Diário** | Visão dos hábitos de hoje com conclusão em um toque e animação de confete ao bater a meta |
+| 🔥 **Sistema de Streak** | Sequências calculadas via trigger PostgreSQL (`AFTER INSERT OR DELETE`) com recálculo retroativo |
+| 📅 **Planejador Semanal** | Distribua hábitos em dias específicos da semana com drag-free UX |
+| 🤖 **Assistente de IA** | Chat contextual com Gemini para sugestão de melhores distribuições de rotina |
+| ⏱️ **Pomodoro Integrado** | Timer de foco nativo, sem sair do app |
+| 🌙 **Dark Mode Nativo** | Tema claro/escuro/sistema persistido sem flash no carregamento |
+| 📱 **PWA Instalável** | Funciona como app nativo no Android e no iOS via `vite-plugin-pwa` |
+| 🔐 **Auth Completa** | Email/senha + Google OAuth, fluxo de onboarding guiado e reset de senha |
+| 🗑️ **Exclusão de Conta** | Endpoint serverless com `service_role`, cascade delete em PostgreSQL (conformidade LGPD) |
 
-### Principais Tecnologias Utilizadas
-- **Frontend Core**: React 18 + TypeScript + Vite.
-- **Estilização**: Tailwind CSS com Framer Motion (para animações de Layout e Interações).
-- **Gerenciamento de Gráficos**: Recharts.
-- **Backend-as-a-Service**: Supabase (Auth, PostgreSQL DB, Realtime Channels).
-- **Pagamentos**: Stripe (Integrado via API Routes Serverless).
-- **Hospedagem**: Vercel.
+---
 
-### Estrutura de Pastas
-```text
+## 🏗️ Arquitetura
+
+A aplicação segue um modelo **BFF Serverless** — o frontend React comunica diretamente com o Supabase para operações de dados, enquanto lógica sensível (envio de e-mail, exclusão de conta) roda em **API Functions Node.js na Vercel**.
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                         CLIENTE (Browser)                       │
+│              React 19 + Vite 6 + TailwindCSS 4                  │
+│   GSAP (onboarding) • Framer Motion (UI) • Lenis (scroll)       │
+└────────────────────────┬────────────────────────────────────────┘
+                         │
+          ┌──────────────┼──────────────────┐
+          │              │                  │
+          ▼              ▼                  ▼
+   Supabase Auth   Supabase DB         Vercel Edge
+   (Google OAuth   (PostgreSQL +       API Functions
+    + Email/Pass)   Row Level           /api/send-email
+                    Security)           /api/account/delete
+                         │
+                         ▼
+                   Google Gemini API
+                   (chat de sugestão
+                    de rotina)
+```
+
+### Decisões de Design Notáveis
+
+**Streak via Database Trigger** — Em vez de calcular o streak no frontend (propenso a race conditions), toda atualização dispara um trigger PostgreSQL `AFTER INSERT OR DELETE ON task_completions` que recalcula atomicamente `current_streak`, `max_streak` e `total_completions` na tabela `tasks`. Garante consistência mesmo com múltiplos dispositivos.
+
+**`VITE_FREE_FOR_ALL` Feature Flag** — O sistema de cobrança está implementado e pronto, mas desativado via env var. Isso permite ligar e desligar o paywall sem nenhuma alteração de código — reverter para o modo pago é questão de mudar uma variável na Vercel.
+
+**Serverless para operações privilegiadas** — Envio de e-mail transacional (Resend) e exclusão de conta (Supabase Admin API) rodam em funções Node.js na Vercel com `service_role`, nunca expondo chaves privilegiadas ao browser.
+
+---
+
+## 🛠️ Stack Completa
+
+**Frontend**
+- **React 19** + **TypeScript** + **Vite 6**
+- **Tailwind CSS 4** com design system próprio (tokens de cor, tipografia Geist)
+- **GSAP 3** (animações de onboarding com `ScrollTrigger` e `useGSAP`)
+- **Framer Motion** (transições de página e micro-interações)
+- **Lenis** (scroll inercial suave)
+- **Recharts** (gráficos de progresso no perfil)
+- **Sonner** (toast notifications)
+- **shadcn/ui** + **Base UI** (primitivas acessíveis)
+
+**Backend & Infraestrutura**
+- **Supabase** — Auth, PostgreSQL (RLS + Triggers), Storage (avatares)
+- **Vercel** — Hospedagem + API Functions (Node.js / TypeScript)
+- **Resend + React Email** — Templates de e-mail transacional
+- **Google Gemini API** — LLM para o assistente de rotina
+- **PostHog** — Product analytics (eventos de engajamento)
+- **Sentry** — Error monitoring em produção
+
+---
+
+## 📁 Estrutura de Pastas
+
+```
 rituno/
-├── api/                   # Serverless Functions (Vercel) para APIs privadas
-├── public/                # Assets estáticos
+├── api/                        # Vercel Serverless Functions (Node.js)
+│   ├── account/
+│   │   └── delete.ts           # Endpoint de exclusão de conta (service_role)
+│   ├── send-email.ts           # Hook de e-mail transacional (Resend)
+│   └── _lib/
+│       ├── resend.ts           # Cliente Resend
+│       └── email-templates/    # Templates React Email
+├── public/                     # Assets estáticos e manifesto PWA
 ├── src/
-│   ├── app/               # Rotas e Páginas (Feature-Based)
-│   ├── components/        # Componentes Reutilizáveis
-│   │   ├── effects/       # Componentes de micro-interações e efeitos visuais
-│   │   ├── features/      # Componentes de domínio específico (Ex: Pomodoro)
-│   │   ├── layout/        # Elementos de arquitetura da UI (Ex: Sidebar)
-│   │   ├── modals/        # Componentes sobrepostos
-│   │   ├── providers/     # React Context Providers (Theme)
-│   │   └── ui/            # UI Elements Atômicos (Botões, Inputs, Toggle)
-│   ├── contexts/          # Contextos Globais (AuthContext)
-│   ├── hooks/             # Custom Hooks do React
-│   ├── lib/               # Clientes e Utilitários (Supabase, Stripe, Tipos)
-│   └── main.tsx           # Ponto de Entrada da Aplicação
-├── supabase/              # Migrações SQL e scripts do Supabase
-└── tsconfig.json          # Configuração TypeScript
+│   ├── app/                    # Páginas por rota (Feature-Based)
+│   │   ├── auth/               # Login, Register, ForgotPassword
+│   │   ├── dashboard/          # Dashboard principal de hábitos
+│   │   ├── onboarding/         # Fluxo inicial com GSAP
+│   │   ├── profile/            # Perfil do usuário
+│   │   ├── rotina/             # Planejador semanal
+│   │   ├── settings/           # Configurações e Zona de Perigo
+│   │   └── subscription/       # Tela de planos (pronta, desativada por flag)
+│   ├── components/
+│   │   ├── effects/            # Componentes de efeito visual (Confetti, etc.)
+│   │   ├── layout/             # Sidebar, AuthLayout
+│   │   ├── modals/             # Sheets e modais globais
+│   │   └── ui/                 # Primitivas de design system
+│   ├── contexts/
+│   │   └── AuthContext.tsx     # Estado global de autenticação + PostHog identify
+│   ├── hooks/                  # Custom hooks (useLenis, useNotifications, etc.)
+│   └── lib/                    # Clientes externos (supabase.ts, utils.ts)
+└── supabase/
+    └── migrations/             # Histórico de migrations SQL versionado
 ```
 
 ---
 
 ## 🚀 Como Executar Localmente
 
-Siga o passo a passo abaixo para rodar o projeto em seu ambiente local.
+### Pré-requisitos
 
-### 1. Pré-requisitos
-Certifique-se de ter instalado:
-- **Node.js** (Versão 18+ recomendada)
-- Conta no **Supabase** (para provisionar seu banco de dados)
-- Conta no **Stripe** (opcional, para testes de assinaturas)
+- **Node.js** 18+
+- Conta no [Supabase](https://supabase.com) (gratuita)
+- Conta no [Resend](https://resend.com) (gratuita para até 3.000 e-mails/mês)
 
-### 2. Configurando o Ambiente
-Crie um arquivo `.env` na raiz do seu projeto. Você precisará preencher as chaves de acordo com o padrão abaixo:
-
-```env
-# URL e Chave Pública do seu banco de dados Supabase
-VITE_SUPABASE_URL=sua_url_aqui
-VITE_SUPABASE_ANON_KEY=sua_chave_anon_aqui
-
-# Configuração do Stripe
-STRIPE_SECRET_KEY=sua_chave_secreta_stripe_aqui
-
-# Configuração da API do Google Gemini / IA
-VITE_GEMINI_API_KEY=sua_api_key_do_gemini
-APP_URL=http://localhost:5173
-```
-
-### 3. Rodando o Projeto
+### 1. Clone e instale as dependências
 
 ```bash
-# Clone o repositório
 git clone https://github.com/MarcoCorreaz/Rituno.git
-
-# Entre na pasta
 cd Rituno
-
-# Instale as dependências
 npm install
+```
 
-# Inicie o servidor de desenvolvimento
+### 2. Configure as variáveis de ambiente
+
+Copie o arquivo de exemplo e preencha com suas chaves:
+
+```bash
+cp .env.example .env
+```
+
+```env
+# Supabase (obrigatório)
+VITE_SUPABASE_URL=https://xxxxxxxxxxx.supabase.co
+VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+
+# Resend - envio de e-mail (obrigatório para e-mails de boas-vindas)
+RESEND_API_KEY=re_xxxxxxxxxxxx
+SEND_EMAIL_HOOK_SECRET=um-segredo-aleatorio-forte
+
+# Google Gemini - assistente de IA (obrigatório para o chat)
+VITE_GEMINI_API_KEY=AIzaSy...
+
+# Modo gratuito: desativa todos os paywalls (opcional, padrão: false)
+VITE_FREE_FOR_ALL=true
+
+# PostHog - analytics (opcional)
+VITE_POSTHOG_KEY=phc_xxxxxxxxxxxx
+```
+
+### 3. Execute as migrations no Supabase
+
+No **SQL Editor** do seu projeto Supabase, execute os arquivos em `supabase/migrations/` na ordem numérica (do mais antigo para o mais novo).
+
+### 4. Inicie o servidor de desenvolvimento
+
+```bash
 npm run dev
 ```
 
-Acesse `http://localhost:5173` no seu navegador!
+Acesse `http://localhost:5173`.
 
 ---
 
-## 🛡️ Licença e Uso
-Esse projeto é uma aplicação proprietária projetada por **Marco Correaz**. Para detalhes sobre permissões de uso ou contribuições, consulte as diretrizes internas da equipe.
+## 🔑 Variáveis de Ambiente — Referência Completa
 
-Feito com 💙 para transformar rotinas em resultados.
+| Variável | Onde Obter | Obrigatório |
+|---|---|---|
+| `VITE_SUPABASE_URL` | Supabase → Project Settings → API | ✅ |
+| `VITE_SUPABASE_ANON_KEY` | Supabase → Project Settings → API | ✅ |
+| `SUPABASE_SERVICE_ROLE_KEY` | Supabase → Project Settings → API | ✅ (server-side only) |
+| `RESEND_API_KEY` | resend.com → API Keys | ✅ |
+| `SEND_EMAIL_HOOK_SECRET` | Qualquer string aleatória segura | ✅ |
+| `VITE_GEMINI_API_KEY` | aistudio.google.com | ✅ |
+| `VITE_FREE_FOR_ALL` | `"true"` ou `"false"` | ❌ |
+| `VITE_POSTHOG_KEY` | posthog.com → Project Settings | ❌ |
+
+---
+
+## 📄 Licença
+
+MIT License — veja o arquivo [LICENSE](LICENSE) para detalhes.
+
+---
+
+<div align="center">
+  <p>Feito com 💙 por <a href="https://github.com/MarcoCorreaz">Marco Correaz</a></p>
+  <p><a href="https://rituno.vercel.app">rituno.vercel.app</a></p>
+</div>

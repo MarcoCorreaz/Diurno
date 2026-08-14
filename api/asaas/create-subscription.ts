@@ -21,12 +21,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
     
     const supabase = createClient(supabaseUrl, supabaseKey);
+    const supabaseAdminKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY as string;
+    const supabaseAdmin = createClient(supabaseUrl, supabaseAdminKey);
 
     const { data: { user }, error: authError } = await supabase.auth.getUser(token);
     if (authError || !user) return res.status(401).json({ error: "Unauthorized." });
 
-    const { planName, cycle, customerId } = req.body;
-    if (!planName || !cycle || !customerId) return res.status(400).json({ error: "Missing required fields" });
+    const { data: profile } = await supabaseAdmin.from("profiles").select("asaas_customer_id").eq("id", user.id).single();
+
+    if (!profile?.asaas_customer_id) {
+      return res.status(400).json({ error: "Cliente não possui ID Asaas. Chame /api/asaas/create-customer primeiro." });
+    }
+    const customerId = profile.asaas_customer_id;
+
+    const { planName, cycle } = req.body;
+    if (!planName || !cycle) return res.status(400).json({ error: "Missing required fields" });
 
     const asaasUrl = process.env.ASAAS_API_URL || "https://sandbox.asaas.com/api/v3";
     const asaasKey = process.env.ASAAS_API_KEY as string;

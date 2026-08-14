@@ -57,7 +57,6 @@ export function AsaasCheckoutModal({
         body: JSON.stringify({
           planName: plan.name,
           cycle: plan.cycle,
-          customerId: customerData.customerId,
         }),
       });
 

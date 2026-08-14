@@ -20,6 +20,7 @@ import { TutorialTour } from "@/components/features/TutorialTour";
 import { HighlightCard } from "@/components/ui/HighlightCard";
 import { MovingDotCard } from "@/components/ui/MovingDotCard";
 import { ElegantDarkPattern } from "@/components/ui/ElegantDarkPattern";
+import posthog from "posthog-js";
 
 
 export default function Dashboard() {
@@ -261,6 +262,9 @@ export default function Dashboard() {
     const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
 
     if (isCompleted) {
+      if (tasks.filter(t => t.completed).length === 0) {
+        posthog.capture("first_habit_marked");
+      }
       setShowConfetti(true);
       toast.success("Hábito concluído!", {
         description: "Você está no caminho certo. Continue assim!"
@@ -298,7 +302,8 @@ export default function Dashboard() {
   const completionRate = Math.round((completedCount / totalCount) * 100);
 
   const handleOpenTaskSheet = () => {
-    if ((userPlan === "free" || userPlan === "básico") && tasks.length >= 5) {
+    const isFreeForAll = import.meta.env.VITE_FREE_FOR_ALL === "true";
+    if (!isFreeForAll && (userPlan === "free" || userPlan === "básico") && tasks.length >= 5) {
       toast.error("Limite de hábitos atingido", {
         description: "Assine o plano Pro para adicionar hábitos ilimitados."
       });

@@ -178,28 +178,34 @@ export default function Subscription() {
                     )}
                   </div>
 
-                  <Button
-                    onClick={() => {
-                      if (plan.name === "Básico") return;
-                      setSelectedPlan({
-                        name: plan.name,
-                        description: plan.description,
-                        price: price,
-                        cycle: billingCycle,
-                      });
-                    }}
-                    variant={isPro ? "default" : "outline"}
-                    shape="pill"
-                    disabled={plan.name === "Básico"}
-                    className="w-full h-auto py-3.5 px-4 mb-8 relative overflow-hidden group shadow-sm"
-                  >
-                    <span className="relative z-10">
-                      {plan.name === "Básico" ? "Plano Atual" : plan.buttonText}
-                    </span>
-                    {isPro && (
-                      <div className="absolute inset-0 -translate-x-full group-hover:animate-[shimmer_1.5s_infinite] bg-gradient-to-r from-transparent via-background/20 to-transparent z-0" />
-                    )}
-                  </Button>
+                  {import.meta.env.VITE_FREE_FOR_ALL === "true" && plan.name !== "Básico" ? (
+                    <div className="w-full mb-8 py-3.5 px-4 rounded-full border border-border bg-secondary/60 text-center text-sm text-muted-foreground font-medium">
+                      Grátis durante o período de testes 🎉
+                    </div>
+                  ) : (
+                    <Button
+                      onClick={() => {
+                        if (plan.name === "Básico") return;
+                        setSelectedPlan({
+                          name: plan.name,
+                          description: plan.description,
+                          price: price,
+                          cycle: billingCycle,
+                        });
+                      }}
+                      variant={isPro ? "default" : "outline"}
+                      shape="pill"
+                      disabled={plan.name === "Básico"}
+                      className="w-full h-auto py-3.5 px-4 mb-8 relative overflow-hidden group shadow-sm"
+                    >
+                      <span className="relative z-10">
+                        {plan.name === "Básico" ? "Plano Atual" : plan.buttonText}
+                      </span>
+                      {isPro && (
+                        <div className="absolute inset-0 -translate-x-full group-hover:animate-[shimmer_1.5s_infinite] bg-gradient-to-r from-transparent via-background/20 to-transparent z-0" />
+                      )}
+                    </Button>
+                  )}
 
                   <div className="space-y-4 flex-1">
                     <p className="text-xs font-semibold text-foreground uppercase tracking-wider mb-4 font-sans">O que está incluído</p>

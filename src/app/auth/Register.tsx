@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
+import posthog from "posthog-js";
 
 export default function Register() {
   useLenis();
@@ -58,6 +59,8 @@ export default function Register() {
       });
 
       if (error) throw error;
+
+      posthog.capture("signup_completed");
 
       navigate("/onboarding");
     } catch (error: any) {

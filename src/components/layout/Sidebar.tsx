@@ -72,6 +72,16 @@ export default function Sidebar() {
       </div>
       
       <div className="hidden md:flex flex-col w-full gap-4 mt-auto">
+        <a 
+          href="mailto:suporte@rituno.com.br"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="p-2 md:px-4 md:py-3 rounded-lg md:rounded-xl cursor-pointer transition-all flex items-center md:gap-4 md:w-full text-muted-foreground hover:text-foreground hover:bg-secondary/50"
+        >
+          <span className="text-xl md:hidden">💬</span>
+          <span className="hidden md:block text-sm">Me conta o que achou 💬</span>
+        </a>
+
         <Link 
           to="/settings" 
           className={cn(

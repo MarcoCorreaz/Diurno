@@ -12,6 +12,7 @@ import { useLenis } from "@/hooks/use-lenis";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
+import posthog from "posthog-js";
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -103,6 +104,7 @@ export default function Onboarding() {
           }, { onConflict: 'id' });
 
         if (error) throw error;
+        posthog.capture("onboarding_completed");
         toast.success("Perfil configurado com sucesso!");
         navigate("/dashboard");
       } catch (err: any) {

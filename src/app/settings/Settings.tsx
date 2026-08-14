@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Home, Calendar as CalendarIcon, Settings as SettingsIcon, Sparkles, Bell, Moon, Sun, Monitor, CalendarDays, Check, Mail, Brain } from "lucide-react";
+import { Home, Calendar as CalendarIcon, Settings as SettingsIcon, Sparkles, Bell, Moon, Sun, Monitor, CalendarDays, Check, Mail, Brain, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useLenis } from "@/hooks/use-lenis";
 import { motion } from "framer-motion";
@@ -22,6 +22,7 @@ export default function Settings() {
   const [profileName, setProfileName] = useState("");
   const [profileEmail, setProfileEmail] = useState("");
   const [isSaving, setIsSaving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Settings State
   const [notifications, setNotifications] = useState({
@@ -66,6 +67,35 @@ export default function Settings() {
       toast.error("Erro ao atualizar perfil", { description: err.message });
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    if (!currentUser) return;
+    if (!window.confirm("Tem certeza que deseja excluir sua conta? Esta ação é irreversível e todos os seus dados serão apagados permanentemente.")) return;
+    
+    setIsDeleting(true);
+    try {
+      const sessionData = await supabase.auth.getSession();
+      const token = sessionData.data.session?.access_token;
+      
+      const response = await fetch('/api/account/delete', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (!response.ok) {
+         throw new Error("Erro ao excluir conta pelo servidor.");
+      }
+      
+      await supabase.auth.signOut();
+      toast.success("Conta excluída com sucesso.");
+    } catch (err: any) {
+      toast.error("Erro ao excluir conta", { description: err.message });
+      setIsDeleting(false);
     }
   };
 
@@ -307,6 +337,30 @@ export default function Settings() {
                 </button>
               </div>
 
+            </div>
+          </section>
+
+          {/* Section: Zona de Perigo */}
+          <section>
+            <h2 className="font-sans text-xl font-medium tracking-tight text-red-500 mb-4 flex items-center gap-2">
+              <AlertCircle className="w-5 h-5" />
+              Zona de Perigo
+            </h2>
+            <div className="bg-red-500/10 border border-red-500/20 rounded-3xl p-5 md:p-6 shadow-sm flex flex-col gap-4">
+              <p className="text-sm text-foreground">
+                Ao excluir sua conta, todos os seus hábitos, histórico de progresso e informações pessoais serão permanentemente removidos. 
+                Esta ação não pode ser desfeita.
+              </p>
+              <div className="flex justify-start mt-2">
+                <Button 
+                  onClick={handleDeleteAccount} 
+                  disabled={isDeleting} 
+                  variant="destructive" 
+                  shape="pill"
+                >
+                  {isDeleting ? "Excluindo..." : "Excluir minha conta"}
+                </Button>
+              </div>
             </div>
           </section>
 
